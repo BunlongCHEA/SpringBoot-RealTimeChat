@@ -1,0 +1,395 @@
+package com.project.realtimechat.serviceImpl;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.project.realtimechat.dto.BaseDTO;
+import com.project.realtimechat.dto.MessageStatusDTO;
+import com.project.realtimechat.entity.ChatMessage;
+import com.project.realtimechat.entity.EnumStatus;
+import com.project.realtimechat.entity.MessageStatus;
+import com.project.realtimechat.entity.User;
+import com.project.realtimechat.exception.BadRequestException;
+import com.project.realtimechat.exception.ResourceNotFoundException;
+import com.project.realtimechat.repository.ChatMessageRepository;
+import com.project.realtimechat.repository.MessageStatusRepository;
+import com.project.realtimechat.repository.UserRepository;
+import com.project.realtimechat.service.MessageStatusService;
+
+@Service
+public class MessageStatusServiceImpl implements MessageStatusService {
+	@Autowired
+    private MessageStatusRepository messageStatusRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
+    
+    @Autowired
+    private ModelMapper modelMapper;
+    
+    /**
+     * Creates a new message status for a user and message
+     * @param userId The ID of the user
+     * @param messageId The ID of the message
+     * @param status The status to set
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<BaseDTO<MessageStatusDTO>> createMessageStatus(Long userId, Long messageId, EnumStatus status) {
+        try {
+            // Validate inputs
+            if (userId == null || messageId == null || status == null) {
+                throw new BadRequestException("User ID, Message ID, and Status are required");
+            }
+            
+            // Fetch user and chat message
+            User user = findEntityByUserId(userId);
+            ChatMessage chatMessage = findEntityByMessageId(messageId);
+            
+            // Check if message status already exists
+            messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
+                    .ifPresent(existingStatus -> {
+                        throw new BadRequestException("Message status already exists for this user and message");
+                    });
+            
+            // Create new message status
+            MessageStatus messageStatus = new MessageStatus();
+            messageStatus.setUsers(user);
+            messageStatus.setChatMessages(chatMessage);
+            messageStatus.setStatus(status);
+            messageStatus.setTimestamp(Instant.now());
+            
+            MessageStatus savedMessageStatus = messageStatusRepository.save(messageStatus);
+            
+            // Convert to DTO
+            MessageStatusDTO messageStatusDTO = modelMapper.map(savedMessageStatus, MessageStatusDTO.class);
+            
+            BaseDTO<MessageStatusDTO> response = new BaseDTO<>(
+                HttpStatus.CREATED.value(),
+                "Message status created successfully",
+                messageStatusDTO
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to create message status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Updates an existing message status
+     * @param userId The ID of the user
+     * @param messageId The ID of the message
+     * @param status The new status to set
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<BaseDTO<MessageStatusDTO>> updateMessageStatus(Long userId, Long messageId, EnumStatus status) {
+        try {
+            // Validate inputs
+            if (userId == null || messageId == null || status == null) {
+                throw new BadRequestException("User ID, Message ID, and Status are required");
+            }
+            
+            // Fetch user and chat message to ensure they exist
+            findEntityByUserId(userId);
+            findEntityByMessageId(messageId);
+            
+            // Find the existing message status
+            MessageStatus messageStatus = messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Message status not found for user ID: " + userId + " and message ID: " + messageId));
+            
+            // Validate status transition
+            validateStatusTransition(messageStatus.getStatus(), status);
+            
+            // Update message status
+            messageStatus.setStatus(status);
+            messageStatus.setTimestamp(Instant.now());
+            
+            MessageStatus updatedMessageStatus = messageStatusRepository.save(messageStatus);
+            
+            // Convert to DTO
+            MessageStatusDTO messageStatusDTO = modelMapper.map(updatedMessageStatus, MessageStatusDTO.class);
+            
+            BaseDTO<MessageStatusDTO> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message status updated successfully",
+                messageStatusDTO
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to update message status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gets a message status for a specific user and message
+     * @param userId The ID of the user
+     * @param messageId The ID of the message
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(Long userId, Long messageId) {
+        try {
+            // Validate inputs
+            if (userId == null || messageId == null) {
+                throw new BadRequestException("User ID and Message ID are required");
+            }
+            
+            // Find the message status
+            MessageStatus messageStatus = findMessageStatusByUserAndMessage(userId, messageId);
+            
+            // Convert to DTO
+            MessageStatusDTO messageStatusDTO = modelMapper.map(messageStatus, MessageStatusDTO.class);
+            
+            BaseDTO<MessageStatusDTO> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message status retrieved successfully",
+                messageStatusDTO
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get message status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gets all message statuses for a specific message
+     * @param messageId The ID of the message
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByMessage(Long messageId) {
+        try {
+            // Validate inputs
+            if (messageId == null) {
+                throw new BadRequestException("Message ID is required");
+            }
+            
+            // Verify message exists
+            findEntityByMessageId(messageId);
+            
+            // Get all message statuses for this message
+            List<MessageStatus> messageStatuses = messageStatusRepository.findByChatMessagesId(messageId);
+            
+            // Convert to DTOs
+            List<MessageStatusDTO> messageStatusDTOs = messageStatuses.stream()
+                    .map(ms -> modelMapper.map(ms, MessageStatusDTO.class))
+                    .collect(Collectors.toList());
+            
+            BaseDTO<List<MessageStatusDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message statuses retrieved successfully",
+                messageStatusDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get message statuses: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gets all message statuses for a specific user
+     * @param userId The ID of the user
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByUser(Long userId) {
+        try {
+            // Validate inputs
+            if (userId == null) {
+                throw new BadRequestException("User ID is required");
+            }
+            
+            // Verify user exists
+            findEntityByUserId(userId);
+            
+            // Get all message statuses for this user
+            List<MessageStatus> messageStatuses = messageStatusRepository.findByUsersId(userId);
+            
+            // Convert to DTOs
+            List<MessageStatusDTO> messageStatusDTOs = messageStatuses.stream()
+                    .map(ms -> modelMapper.map(ms, MessageStatusDTO.class))
+                    .collect(Collectors.toList());
+            
+            BaseDTO<List<MessageStatusDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message statuses retrieved successfully",
+                messageStatusDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get message statuses: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gets all message statuses for a specific user and status
+     * @param userId The ID of the user
+     * @param status The status to filter by
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByUserAndStatus(Long userId, EnumStatus status) {
+        try {
+            // Validate inputs
+            if (userId == null || status == null) {
+                throw new BadRequestException("User ID and Status are required");
+            }
+            
+            // Verify user exists
+            findEntityByUserId(userId);
+            
+            // Get all message statuses for this user and status
+            List<MessageStatus> messageStatuses = messageStatusRepository.findByUsersIdAndStatus(userId, status);
+            
+            // Convert to DTOs
+            List<MessageStatusDTO> messageStatusDTOs = messageStatuses.stream()
+                    .map(ms -> modelMapper.map(ms, MessageStatusDTO.class))
+                    .collect(Collectors.toList());
+            
+            BaseDTO<List<MessageStatusDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message statuses retrieved successfully",
+                messageStatusDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get message statuses: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gets all message statuses for a specific message and status
+     * @param messageId The ID of the message
+     * @param status The status to filter by
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByMessageAndStatus(Long messageId, EnumStatus status) {
+        try {
+            // Validate inputs
+            if (messageId == null || status == null) {
+                throw new BadRequestException("Message ID and Status are required");
+            }
+            
+            // Verify message exists
+            findEntityByMessageId(messageId);
+            
+            // Get all message statuses for this message and status
+            List<MessageStatus> messageStatuses = messageStatusRepository.findByChatMessagesIdAndStatus(messageId, status);
+            
+            // Convert to DTOs
+            List<MessageStatusDTO> messageStatusDTOs = messageStatuses.stream()
+                    .map(ms -> modelMapper.map(ms, MessageStatusDTO.class))
+                    .collect(Collectors.toList());
+            
+            BaseDTO<List<MessageStatusDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Message statuses retrieved successfully",
+                messageStatusDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get message statuses: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Helper method to get message status entity by user and message
+     * @param userId The ID of the user
+     * @param messageId The ID of the message
+     */
+    private MessageStatus findMessageStatusByUserAndMessage(Long userId, Long messageId) {
+        return messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Message status not found for user ID: " + userId + " and message ID: " + messageId));
+    }
+    
+    /**
+     * Helper method to find a user entity by ID
+     * @param userId The ID of the user
+     */
+    private User findEntityByUserId(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+    }
+    
+    /**
+     * Helper method to find a chat message entity by ID
+     * @param messageId The ID of the chat message
+     */
+    private ChatMessage findEntityByMessageId(Long messageId) {
+        return chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found with ID: " + messageId));
+    }
+    
+    /**
+     * Helper method to validate status transition
+     * @param currentStatus The current status
+     * @param newStatus The new status
+     */
+    private void validateStatusTransition(EnumStatus currentStatus, EnumStatus newStatus) {
+        // Status can only progress from SENT -> DELIVERED -> READ, not backward
+        if (currentStatus == EnumStatus.READ && (newStatus == EnumStatus.SENT || newStatus == EnumStatus.DELIVERED)) {
+            throw new BadRequestException("Cannot change status from READ to " + newStatus);
+        }
+        
+        if (currentStatus == EnumStatus.DELIVERED && newStatus == EnumStatus.SENT) {
+            throw new BadRequestException("Cannot change status from DELIVERED to SENT");
+        }
+    }
+}
