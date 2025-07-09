@@ -23,7 +23,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findByChatRoomsIdAndTimestampAfterOrderByTimestampAsc(
             Long chatRoomId, Instant timestamp);
     
-    List<ChatMessage> findByChatRoomsIdAndSenderId(Long chatRoomId, Long senderId);
+    @Query("SELECT m FROM ChatMessage m WHERE m.chatRooms.id = :chatRoomId AND m.sender.id = :senderId")
+    List<ChatMessage> findByChatRoomsIdAndSenderId(@Param("chatRoomId") Long chatRoomId, @Param("senderId") Long senderId);
     
     List<ChatMessage> findByChatRoomsIdAndType(Long chatRoomId, EnumMessageType type);
     
@@ -50,6 +51,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("fromTimestamp") Instant fromTimestamp,
             @Param("toTimestamp") Instant toTimestamp);
     
-    boolean existsByChatRoomsIdAndSenderIdAndId(
-            Long chatRoomId, Long senderId, Long messageId);
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM ChatMessage m WHERE m.chatRooms.id = :chatRoomId AND m.sender.id = :senderId AND m.id = :messageId")
+    boolean existsByChatRoomsIdAndSenderIdAndId(@Param("chatRoomId") Long chatRoomId, @Param("senderId") Long senderId, @Param("messageId") Long messageId);
 }
