@@ -75,7 +75,7 @@ public class Participant {
     private String username;
     
     @Transient
-    private String displayName;
+    private String fullName;
     
     // Getters that populate the transient fields for ModelMapper
     public Long getUserId() {
@@ -90,7 +90,7 @@ public class Participant {
         return users != null ? users.getUsername() : null;
     }
     
-    public String getDisplayName() {
-        return users != null ? users.getDisplayName() : null;
+    public String getFullName() {
+        return users != null ? users.getFullName() : null;
     }
 }

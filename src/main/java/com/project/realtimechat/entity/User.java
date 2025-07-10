@@ -27,7 +27,7 @@ public class User {
     private String username;
 	
 	@Size(max = 50)
-    private String displayName;
+    private String fullName;
 	
 	@Size(max = 255)
     private String avatarUrl;
