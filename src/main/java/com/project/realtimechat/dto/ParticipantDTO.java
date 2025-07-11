@@ -29,5 +29,5 @@ public class ParticipantDTO {
     
     // User details
     private String username;
-    private String displayName;
+    private String fullName;
 }
