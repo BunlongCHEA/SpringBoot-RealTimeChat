@@ -285,9 +285,9 @@ public class ChatMessageController {
      * @param authentication The authenticated user
      */
     @GetMapping("/chat-room/{chatRoomId}")
-    public ResponseEntity<BaseDTO<Page<ChatMessageDTO>>> getMessagesByChatRoomId(
+    public ResponseEntity<BaseDTO<List<ChatMessageDTO>>> getMessagesByChatRoomId(
             @PathVariable Long chatRoomId,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            @PageableDefault(size = 20, sort = "timestamp") Pageable pageable,
             Authentication authentication) {
         try {
             String username = authentication.getName();
@@ -305,4 +305,7 @@ public class ChatMessageController {
             throw e;
         }
     }
+    
+    
+    
 }

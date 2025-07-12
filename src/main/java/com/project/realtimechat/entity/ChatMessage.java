@@ -64,8 +64,8 @@ public class ChatMessage {
     @Transient
     private Long chatRoomId;
 
-    @Transient
-    private Long senderId;
+//    @Transient
+//    private Long senderId;
 
     @Transient
     private String senderName;
@@ -76,9 +76,9 @@ public class ChatMessage {
         return chatRooms != null ? chatRooms.getId() : null;
     }
 
-    public Long getSenderId() {
-        return sender != null ? sender.getId() : null;
-    }
+//    public Long getSenderId() {
+//        return sender != null ? sender.getId() : null;
+//    }
 
     public String getSenderName() {
         return sender != null ? sender.getUsername() : null;

@@ -16,7 +16,7 @@ import com.project.realtimechat.entity.EnumMessageType;
 public interface ChatMessageService {
 	// CRUD Operations
     ResponseEntity<BaseDTO<ChatMessageDTO>> getMessageById(Long id);
-    ResponseEntity<BaseDTO<Page<ChatMessageDTO>>> getMessagesByChatRoomId(Long chatRoomId, Pageable pageable);
+    ResponseEntity<BaseDTO<List<ChatMessageDTO>>> getMessagesByChatRoomId(Long chatRoomId, Pageable pageable);
     ResponseEntity<BaseDTO<ChatMessageDTO>> createTextMessage(Long chatRoomId, Long senderId, String content);
     
     // Helper Methods

@@ -76,7 +76,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     public ResponseEntity<BaseDTO<ChatMessageDTO>> getMessageById(Long id) {
         try {
             ChatMessage message = findEntityByChatMessageId(id);
-            ChatMessageDTO messageDTO = convertToDTO(message);
+            ChatMessageDTO messageDTO =  modelMapper.map(message, ChatMessageDTO.class);
             
             BaseDTO<ChatMessageDTO> response = new BaseDTO<>(HttpStatus.OK.value(), 
                     "Message retrieved successfully", messageDTO);
@@ -96,7 +96,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<BaseDTO<Page<ChatMessageDTO>>> getMessagesByChatRoomId(
+    public ResponseEntity<BaseDTO<List<ChatMessageDTO>>> getMessagesByChatRoomId(
             Long chatRoomId, Pageable pageable) {
         try {
             // Verify the chat room exists
@@ -106,14 +106,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                     chatRoomId, pageable);
             
             List<ChatMessageDTO> messageDTOs = messagePage.getContent().stream()
-                    .map(this::convertToDTO)
+                    .map(message -> modelMapper.map(message, ChatMessageDTO.class))
                     .collect(Collectors.toList());
             
-            Page<ChatMessageDTO> dtoPage = new PageImpl<>(
-                    messageDTOs, pageable, messagePage.getTotalElements());
-            
-            BaseDTO<Page<ChatMessageDTO>> response = new BaseDTO<>(HttpStatus.OK.value(), 
-                    "Messages retrieved successfully", dtoPage);
+            BaseDTO<List<ChatMessageDTO>> response = new BaseDTO<>(HttpStatus.OK.value(), 
+                    "Messages retrieved successfully", messageDTOs);
             
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (ResourceNotFoundException e) {
@@ -167,7 +164,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             chatRoom.setChatMessages(savedMessage);
             chatRoomRepository.save(chatRoom);
             
-            ChatMessageDTO messageDTO = convertToDTO(savedMessage);
+            ChatMessageDTO messageDTO = modelMapper.map(savedMessage, ChatMessageDTO.class);
             
             BaseDTO<ChatMessageDTO> response = new BaseDTO<>(HttpStatus.CREATED.value(), 
                     "Message created successfully", messageDTO);
@@ -189,26 +186,5 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     public ChatMessage findEntityByChatMessageId(Long id) {
         return chatMessageRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Message not found with ID: " + id));
-    }
-    
-    /**
-     * Converts a ChatMessage entity to DTO
-     * @param message The ChatMessage entity
-     * @return The ChatMessageDTO
-     */
-    private ChatMessageDTO convertToDTO(ChatMessage message) {
-        ChatMessageDTO dto = modelMapper.map(message, ChatMessageDTO.class);
-        
-        // Map additional fields that ModelMapper might miss
-        if (message.getSender() != null) {
-            dto.setSenderId(message.getSender().getId());
-            dto.setSenderName(message.getSender().getUsername());
-        }
-        
-        if (message.getChatRooms() != null) {
-            dto.setChatRoomId(message.getChatRooms().getId());
-        }
-        
-        return dto;
     }
 }
