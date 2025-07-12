@@ -41,9 +41,9 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         
         // Checks if this is a CONNECT frame (initial WebSocket connection request)
-        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-            // Logs the connection attempt
-            log.info("[{}] | WebSocket connection attempt", Instant.now());
+        if (accessor != null) {
+        	log.debug("Processing WebSocket message - Command: {}, Destination: {}", 
+                    accessor.getCommand(), accessor.getDestination());
             
             // Extracts the Authorization header from the STOMP frame
             List<String> authorization = accessor.getNativeHeader("Authorization");

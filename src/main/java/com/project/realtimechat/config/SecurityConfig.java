@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/topic/**").permitAll()  // Allow STOMP topic destinations
                 .requestMatchers("/queue/**").permitAll()  // Allow STOMP queue destinations
                 .requestMatchers("/user/**").permitAll()  // Allow STOMP user destinations
+                .requestMatchers("/error/**").permitAll()  // Allow error endpoints
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

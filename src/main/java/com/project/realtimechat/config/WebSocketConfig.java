@@ -59,5 +59,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         
         log.info("[{}] | User configured WebSocket client inbound channel with auth interceptor", Instant.now());
     }
+    
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        // Optional: Add interceptor for outbound messages too
+        registration.interceptors(webSocketAuthInterceptor);
+    }
 	
 }
