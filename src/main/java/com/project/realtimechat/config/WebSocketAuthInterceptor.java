@@ -45,14 +45,35 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         	log.debug("Processing WebSocket message - Command: {}, Destination: {}", 
                     accessor.getCommand(), accessor.getDestination());
             
-            // Extracts the Authorization header from the STOMP frame
-            List<String> authorization = accessor.getNativeHeader("Authorization");
-            
-            // Processes the Authorization header if it exists
-            if (authorization != null && !authorization.isEmpty()) {
-                // Removes the "Bearer " prefix to get the raw token
-                String token = authorization.get(0).replace("Bearer ", "");
+        	// Only authenticate CONNECT frames and authenticated SEND frames
+            if (StompCommand.CONNECT.equals(accessor.getCommand()) || 
+                (StompCommand.SEND.equals(accessor.getCommand()) && accessor.getUser() == null)) {
                 
+                authenticateMessage(accessor);
+            }
+        }
+        
+        return message;
+    }
+    
+    /**
+     * Handles authentication logic for WebSocket messages
+     */
+    private void authenticateMessage(StompHeaderAccessor accessor) {
+        // Extracts the Authorization header from the STOMP frame
+        List<String> authorization = accessor.getNativeHeader("Authorization");
+        
+        // Processes the Authorization header if it exists
+        if (authorization != null && !authorization.isEmpty()) {
+            // Removes the "Bearer " prefix to get the raw token
+            String authHeader = authorization.get(0);
+            String token = null;
+            
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+            
+            if (token != null) {
                 try {
                     // Validates the JWT token
                     if (jwtService.validateToken(token)) {
@@ -75,15 +96,22 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                         // Logs successful authentication
                         log.info("[{}] | User {} authenticated successfully via WebSocket", 
                         		Instant.now(), username);
+                    } else {
+                        log.warn("[{}] | Invalid JWT token provided for WebSocket authentication", 
+                                Instant.now());
                     }
                 } catch (Exception e) {
                     // Logs authentication failures with the error message
-                    log.error("[{}] | WebSocket authentication failed {}", 
+                    log.error("[{}] | WebSocket authentication failed: {}", 
                     		Instant.now(), e.getMessage());
                 }
+            } else {
+                log.warn("[{}] | No valid authorization token found in WebSocket headers", 
+                        Instant.now());
             }
+        } else {
+            log.debug("[{}] | No Authorization header found in WebSocket message", 
+                    Instant.now());
         }
-        
-        return message;
     }
 }

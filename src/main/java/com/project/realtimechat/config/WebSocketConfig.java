@@ -21,7 +21,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
     private WebSocketAuthInterceptor webSocketAuthInterceptor;
 
 	/**
-	 * http://localhost:8080/ws/websocket
+	 * WebSocket endpoint: ws://localhost:8080/ws
+	 * SockJS fallback: http://localhost:8080/ws/websocket
 	 */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -54,16 +55,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
     
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // Add authentication Interceptor
+        // Add authentication Interceptor for incoming messages
         registration.interceptors(webSocketAuthInterceptor);
         
-        log.info("[{}] | User configured WebSocket client inbound channel with auth interceptor", Instant.now());
+        // Set thread pool executor for handling messages
+        registration.taskExecutor().corePoolSize(8).maxPoolSize(16).queueCapacity(100);
+        
+        log.info("[{}] | Configured WebSocket client inbound channel with auth interceptor", Instant.now());
     }
     
     @Override
     public void configureClientOutboundChannel(ChannelRegistration registration) {
-        // Optional: Add interceptor for outbound messages too
-        registration.interceptors(webSocketAuthInterceptor);
+        // Set thread pool executor for outbound messages
+        registration.taskExecutor().corePoolSize(8).maxPoolSize(16).queueCapacity(100);
+        
+        log.info("[{}] | Configured WebSocket client outbound channel", Instant.now());
     }
 	
 }
