@@ -45,30 +45,4 @@ public class MessageStatusController {
             @PathVariable Long messageId) {   
         return messageStatusService.getMessageStatusByUserAndMessage(userId, messageId);
     }
-	
-	@GetMapping("/message/{messageId}")
-	public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByMessage(
-            @PathVariable Long messageId) {        
-        return messageStatusService.getAllMessageStatusesByMessage(messageId);
-    }
-	
-	@GetMapping("/user/{userId}")
-	public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByUser(
-            @PathVariable Long userId) {       
-        return messageStatusService.getAllMessageStatusesByUser(userId);
-    }
-	
-	@GetMapping("/user/{userId}/status/{status}")
-	public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByUserAndStatus(
-            @PathVariable Long userId,
-            @PathVariable EnumStatus status) {  
-        return messageStatusService.getAllMessageStatusesByUserAndStatus(userId, status);
-    }
-	
-	@GetMapping("/message/{messageId}/status/{status}")
-	public ResponseEntity<BaseDTO<List<MessageStatusDTO>>> getAllMessageStatusesByMessageAndStatus(
-            @PathVariable Long messageId,
-            @PathVariable EnumStatus status) {    
-        return messageStatusService.getAllMessageStatusesByMessageAndStatus(messageId, status);
-    }
 }
