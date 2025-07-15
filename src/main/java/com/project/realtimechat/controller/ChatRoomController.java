@@ -31,6 +31,11 @@ public class ChatRoomController {
         return chatRoomService.getChatRoomById(id);
     }
 	
+	@GetMapping("/user/{userId}")
+    public ResponseEntity<BaseDTO<List<ChatRoomDTO>>> getChatRoomsByUserId(@PathVariable Long userId) {
+        return chatRoomService.getChatRoomsByUserId(userId);
+    }
+	
 	@GetMapping
 	public ResponseEntity<BaseDTO<List<ChatRoomDTO>>> getAllChatRooms() { 
         return chatRoomService.getAllChatRooms();

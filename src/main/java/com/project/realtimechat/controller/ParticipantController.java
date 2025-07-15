@@ -49,6 +49,16 @@ public class ParticipantController {
         return participantService.getParticipantsByUserId(userId);
     }
 	
+	@GetMapping("/user/{userId}/chat-partners")
+	public ResponseEntity<BaseDTO<List<ParticipantDTO>>> getChatPartners(@PathVariable Long userId) {
+	    return participantService.getChatPartners(userId);
+	}
+	
+	@GetMapping("/user/{userId}/personal-chat-partners")
+    public ResponseEntity<BaseDTO<List<ParticipantDTO>>> getPersonalChatPartners(@PathVariable Long userId) {
+        return participantService.getPersonalChatPartners(userId);
+    }
+	
 	@PostMapping("/room/{chatRoomId}/add")
 	public ResponseEntity<BaseDTO<ParticipantDTO>> addParticipantToChatRoom(
             @PathVariable Long chatRoomId,

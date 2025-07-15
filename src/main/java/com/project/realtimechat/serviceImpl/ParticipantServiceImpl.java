@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -156,6 +157,69 @@ public class ParticipantServiceImpl implements ParticipantService {
             throw e;
         } catch (Exception e) {
             throw new BadRequestException("Failed to retrieve participants: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public ResponseEntity<BaseDTO<List<ParticipantDTO>>> getChatPartners(Long userId) {
+        try {
+            // Use the simpler query method
+            List<Participant> chatPartners = participantRepository.findChatPartnersByUserId(userId);
+            
+            // Convert to DTOs and populate user information
+            List<ParticipantDTO> chatPartnerDTOs = chatPartners.stream()
+                .map(participant -> {
+                    ParticipantDTO dto = modelMapper.map(participant, ParticipantDTO.class);
+                    User user = participant.getUsers();
+                    if (user != null) {
+                        dto.setUserId(user.getId());
+                        dto.setUsername(user.getUsername());
+                        dto.setFullName(user.getFullName());
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            BaseDTO<List<ParticipantDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(), 
+                "Chat partners retrieved successfully", 
+                chatPartnerDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get chat partners: " + e.getMessage());
+        }
+    }
+    
+    // Alternative implementation if you want only PERSONAL chat partners
+    @Override
+    public ResponseEntity<BaseDTO<List<ParticipantDTO>>> getPersonalChatPartners(Long userId) {
+        try {
+            List<Participant> chatPartners = participantRepository.findPersonalChatPartnersByUserId(userId);
+            
+            List<ParticipantDTO> chatPartnerDTOs = chatPartners.stream()
+                .map(participant -> {
+                    ParticipantDTO dto = modelMapper.map(participant, ParticipantDTO.class);
+                    User user = participant.getUsers();
+                    if (user != null) {
+                        dto.setUserId(user.getId());
+                        dto.setUsername(user.getUsername());
+                        dto.setFullName(user.getFullName());
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            BaseDTO<List<ParticipantDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(), 
+                "Personal chat partners retrieved successfully", 
+                chatPartnerDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get personal chat partners: " + e.getMessage());
         }
     }
     

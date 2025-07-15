@@ -16,4 +16,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>{
            "AND p1.users.id = :userId1 AND p2.users.id = :userId2 " +
            "AND p1.users.id != p2.users.id")
     List<ChatRoom> findPersonalChatBetweenUsers(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+    
+	@Query("SELECT DISTINCT cr FROM ChatRoom cr " +
+	           "JOIN cr.participants p " +
+	           "WHERE p.users.id = :userId ")
+	List<ChatRoom> findChatRoomsByUserId(@Param("userId") Long userId);
 }

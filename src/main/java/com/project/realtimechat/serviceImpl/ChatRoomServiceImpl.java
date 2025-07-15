@@ -89,6 +89,63 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         }
     }
     
+    /**
+	 * Get all chat room by user/participant
+	 */
+    @Override
+    public ResponseEntity<BaseDTO<List<ChatRoomDTO>>> getChatRoomsByUserId(Long userId) {
+        try {
+            User currentUser = userService.findEntityByIdUsers(userId);
+            
+            // Get all chat rooms where the user is a participant
+            List<ChatRoom> userChatRooms = chatRoomRepository.findChatRoomsByUserId(userId);
+            
+            // Convert to DTOs and populate last message info
+            List<ChatRoomDTO> chatRoomDTOs = userChatRooms.stream()
+                .map(chatRoom -> {
+                    ChatRoomDTO dto = modelMapper.map(chatRoom, ChatRoomDTO.class);
+                    
+                    // Get participants for this chat room, excluding current user
+                    List<Participant> participants = participantRepository.findByChatRoomsId(chatRoom.getId());
+                    Set<ParticipantDTO> participantDTOs = participants.stream()
+                        .filter(p -> !p.getUsers().getId().equals(userId)) // Exclude current user
+                        .map(participant -> {
+                            ParticipantDTO pDto = modelMapper.map(participant, ParticipantDTO.class);
+                            User user = participant.getUsers();
+                            if (user != null) {
+                                pDto.setUserId(user.getId());
+                                pDto.setUsername(user.getUsername());
+                                pDto.setFullName(user.getFullName());
+//                                pDto.setEmail(user.getEmail());
+//                                pDto.setAvatarUrl(user.getAvatarUrl());
+                            }
+                            return pDto;
+                        })
+                        .collect(Collectors.toSet());
+                    
+                    dto.setParticipants(participantDTOs);
+                    
+                    // Populate last message details
+                    if (chatRoom.getChatMessages() != null) {
+                        populateLastMessageDetails(dto, chatRoom.getChatMessages());
+                    }
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            BaseDTO<List<ChatRoomDTO>> response = new BaseDTO<>(
+                HttpStatus.OK.value(),
+                "Chat rooms retrieved successfully",
+                chatRoomDTOs
+            );
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get chat rooms: " + e.getMessage());
+        }
+    }
+    
 	/**
 	 * Get all chat room if need to find all
 	 */

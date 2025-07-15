@@ -16,6 +16,8 @@ public interface ParticipantService {
     ResponseEntity<BaseDTO<List<ParticipantDTO>>> getParticipantsByChatRoomId(Long chatRoomId);
     ResponseEntity<BaseDTO<ParticipantDTO>> getParticipantByUserAndChatRoom(Long userId, Long chatRoomId);
     ResponseEntity<BaseDTO<List<ParticipantDTO>>> getParticipantsByUserId(Long userId);
+    ResponseEntity<BaseDTO<List<ParticipantDTO>>> getChatPartners(Long userId);
+    ResponseEntity<BaseDTO<List<ParticipantDTO>>> getPersonalChatPartners(Long userId);
     
     // Participant Management
     ResponseEntity<BaseDTO<ParticipantDTO>> addParticipantToChatRoom(Long chatRoomId, Long userId, Long addedByUserId);

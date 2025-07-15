@@ -13,6 +13,7 @@ import com.project.realtimechat.entity.User;
 public interface ChatRoomService {
 	// CRUD Operations
 	ResponseEntity<BaseDTO<ChatRoomDTO>> getChatRoomById(Long id);
+	ResponseEntity<BaseDTO<List<ChatRoomDTO>>> getChatRoomsByUserId(Long userId);
     ResponseEntity<BaseDTO<List<ChatRoomDTO>>> getAllChatRooms();
     ResponseEntity<BaseDTO<ChatRoomDTO>> createChatRoom(ChatRoomDTO chatRoomDTO, Long currentUserId);
     ResponseEntity<BaseDTO<ChatRoomDTO>> updateChatRoom(Long id, ChatRoomDTO chatRoomDTO, Long currentUserId);
