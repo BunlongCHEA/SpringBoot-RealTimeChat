@@ -23,6 +23,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findByChatRoomsIdAndTimestampAfterOrderByTimestampAsc(
             Long chatRoomId, Instant timestamp);
     
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRooms.id = :chatRoomId ORDER BY cm.timestamp ASC")
+    Page<ChatMessage> findByChatRoomsIdOrderByTimestampAsc(@Param("chatRoomId") Long chatRoomId, Pageable pageable);
+    
     @Query("SELECT m FROM ChatMessage m WHERE m.chatRooms.id = :chatRoomId AND m.sender.id = :senderId")
     List<ChatMessage> findByChatRoomsIdAndSenderId(@Param("chatRoomId") Long chatRoomId, @Param("senderId") Long senderId);
     

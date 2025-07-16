@@ -25,6 +25,7 @@ import com.project.realtimechat.entity.ChatMessage;
 import com.project.realtimechat.entity.ChatRoom;
 import com.project.realtimechat.entity.EnumMessageType;
 import com.project.realtimechat.entity.EnumRoomRole;
+import com.project.realtimechat.entity.EnumRoomType;
 import com.project.realtimechat.entity.EnumStatus;
 import com.project.realtimechat.entity.MessageStatus;
 import com.project.realtimechat.entity.Participant;
@@ -37,6 +38,7 @@ import com.project.realtimechat.repository.MessageStatusRepository;
 import com.project.realtimechat.repository.ParticipantRepository;
 import com.project.realtimechat.service.ChatMessageService;
 import com.project.realtimechat.service.ChatRoomService;
+import com.project.realtimechat.service.DateSeparatorService;
 import com.project.realtimechat.service.UserService;
 
 /**
@@ -63,6 +65,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     
     @Autowired
     private ChatRoomService chatRoomService;
+    
+    @Autowired
+    private DateSeparatorService dateSeparatorService;
     
     @Autowired
     private ModelMapper modelMapper;
@@ -99,13 +104,20 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     public ResponseEntity<BaseDTO<List<ChatMessageDTO>>> getMessagesByChatRoomId(
             Long chatRoomId, Pageable pageable) {
         try {
-            // Verify the chat room exists
-            chatRoomService.findEntityByChatRoomId(chatRoomId);
+        	// Verify the chat room exists
+            ChatRoom chatRoom = chatRoomService.findEntityByChatRoomId(chatRoomId);
             
             Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomsIdOrderByTimestampDesc(
                     chatRoomId, pageable);
             
-            List<ChatMessageDTO> messageDTOs = messagePage.getContent().stream()
+            List<ChatMessage> messages = messagePage.getContent();
+            
+            // Insert smart date separators for personal chats
+            if (chatRoom.getType() == EnumRoomType.PERSONAL) {
+                messages = dateSeparatorService.insertDateSeparators(messages);
+            }
+            
+            List<ChatMessageDTO> messageDTOs = messages.stream()
                     .map(message -> modelMapper.map(message, ChatMessageDTO.class))
                     .collect(Collectors.toList());
             

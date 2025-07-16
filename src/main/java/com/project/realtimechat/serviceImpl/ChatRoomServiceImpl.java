@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -192,18 +193,18 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     @Transactional
     public ResponseEntity<BaseDTO<ChatRoomDTO>> createChatRoom(ChatRoomDTO chatRoomDTO, Long currentUserId) {
-    	try {
+        try {
             User currentUser = userService.findEntityByIdUsers(currentUserId);
             
-            if (chatRoomDTO.getType() == null) {
-                throw new BadRequestException("Chat room type is required");
-            }
-            
             ChatRoom chatRoom;
+            boolean isNewRoom = true;
             
             switch (chatRoomDTO.getType()) {
                 case PERSONAL:
                     chatRoom = createPersonalChatRoom(chatRoomDTO, currentUser);
+                    // Check if it's an existing room
+                    isNewRoom = chatRoom.getCreatedUserId().getId().equals(currentUserId) && 
+                              chatRoom.getParticipants().size() == 2;
                     break;
                 case GROUP:
                     chatRoom = createGroupChatRoom(chatRoomDTO, currentUser);
@@ -212,35 +213,47 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                     chatRoom = createChannelChatRoom(chatRoomDTO, currentUser);
                     break;
                 default:
-                    throw new BadRequestException("Unsupported chat room type: " + chatRoomDTO.getType());
+                    throw new BadRequestException("Invalid chat room type");
             }
             
-            // Create the initial system message
-            createSystemMessage(chatRoom, currentUser, getCreateRoomMessage(chatRoom, currentUser));
+            // Only create system message for new rooms and non-personal types
+            if (isNewRoom && chatRoom.getType() != EnumRoomType.PERSONAL) {
+                String systemMessage = getCreateRoomMessage(chatRoom, currentUser);
+                if (systemMessage != null) {
+                    createSystemMessage(chatRoom, currentUser, systemMessage);
+                    chatRoom = chatRoomRepository.save(chatRoom);
+                }
+            }
             
-            // Save the chat room with the system message
-            ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
+            // Convert to DTO
+            ChatRoomDTO chatRoomResponseDTO = modelMapper.map(chatRoom, ChatRoomDTO.class);
             
-            // Convert to DTO using ModelMapper
-            ChatRoomDTO savedChatRoomDTO = modelMapper.map(savedChatRoom, ChatRoomDTO.class);
-            
-            // Fetch and map participants using ModelMapper
-            List<Participant> participants = participantRepository.findByChatRoomsId(savedChatRoom.getId());
+            // Set participants
+            List<Participant> participants = participantRepository.findByChatRoomsId(chatRoom.getId());
             Set<ParticipantDTO> participantDTOs = participants.stream()
-                    .map(participant -> modelMapper.map(participant, ParticipantDTO.class))
-                    .collect(Collectors.toSet());
+                .map(participant -> {
+                    ParticipantDTO pDto = modelMapper.map(participant, ParticipantDTO.class);
+                    User user = participant.getUsers();
+                    if (user != null) {
+                        pDto.setUserId(user.getId());
+                        pDto.setUsername(user.getUsername());
+                        pDto.setFullName(user.getFullName());
+                    }
+                    return pDto;
+                })
+                .collect(Collectors.toSet());
             
-            savedChatRoomDTO.setParticipants(participantDTOs);
+            chatRoomResponseDTO.setParticipants(participantDTOs);
             
-            // Set last message details
-            if (savedChatRoom.getChatMessages() != null) {
-                populateLastMessageDetails(savedChatRoomDTO, savedChatRoom.getChatMessages());
+            // Set last message details if available
+            if (chatRoom.getChatMessages() != null) {
+                populateLastMessageDetails(chatRoomResponseDTO, chatRoom.getChatMessages());
             }
             
-            BaseDTO<ChatRoomDTO> response = new BaseDTO<>(HttpStatus.CREATED.value(), 
-                    "Chat room created successfully", savedChatRoomDTO);
+            String message = isNewRoom ? "Chat room created successfully" : "Found existing chat room";
+            BaseDTO<ChatRoomDTO> response = new BaseDTO<>(HttpStatus.OK.value(), message, chatRoomResponseDTO);
             
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (ResourceNotFoundException | BadRequestException e) {
             throw e;
         } catch (Exception e) {
@@ -255,7 +268,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
      * @return The created chat room entity
      */
     private ChatRoom createPersonalChatRoom(ChatRoomDTO chatRoomDTO, User currentUser) {
-    	// For PERSONAL chat rooms, need exactly one other user
+        // For PERSONAL chat rooms, need exactly one other user
         if (chatRoomDTO.getParticipants() == null || chatRoomDTO.getParticipants().size() != 1) {
             throw new BadRequestException("PERSONAL chat rooms require exactly one other participant");
         }
@@ -272,7 +285,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 currentUser.getId(), otherUserId);
         
         if (!existingRooms.isEmpty()) {
-            throw new BadRequestException("A personal chat already exists with this user");
+            // Return the existing room instead of creating a new one
+            ChatRoom existingRoom = existingRooms.get(0);
+            return existingRoom;
         }
         
         // Get the other user
@@ -287,7 +302,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         // Save the chat room first to get an ID
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
         
-        // Create and save participants separately
+        // Add current user as participant
         Participant currentUserParticipant = new Participant();
         currentUserParticipant.setUsers(currentUser);
         currentUserParticipant.setChatRooms(savedChatRoom);
@@ -296,6 +311,10 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         currentUserParticipant.setMuted(false);
         currentUserParticipant.setBlocked(false);
         
+        participantRepository.save(currentUserParticipant);
+        savedChatRoom.getParticipants().add(currentUserParticipant);
+        
+        // Add other user as participant
         Participant otherUserParticipant = new Participant();
         otherUserParticipant.setUsers(otherUser);
         otherUserParticipant.setChatRooms(savedChatRoom);
@@ -304,12 +323,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         otherUserParticipant.setMuted(false);
         otherUserParticipant.setBlocked(false);
         
-        // Save participants using the repository
-        participantRepository.save(currentUserParticipant);
         participantRepository.save(otherUserParticipant);
-        
-        // Manually add to the chat room's participant set
-        savedChatRoom.getParticipants().add(currentUserParticipant);
         savedChatRoom.getParticipants().add(otherUserParticipant);
         
         return savedChatRoom;
@@ -446,7 +460,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     private String getCreateRoomMessage(ChatRoom chatRoom, User creator) {
         switch (chatRoom.getType()) {
             case PERSONAL:
-                return "Chat started";
+            	// Generate smart date separator instead of "Chat started"
+                return generateDateSeparator(Instant.now());
                 
             case GROUP:
                 return creator.getUsername() + " created group \"" + chatRoom.getName() + "\"";
@@ -748,5 +763,40 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         } else {
             chatRoomDTO.setLastMessageAttachmentCount(0);
         }
+    }
+    
+    
+    // Add this method to generate smart date separators
+    private String generateDateSeparator(Instant timestamp) {
+        LocalDateTime messageTime = LocalDateTime.ofInstant(timestamp, ZoneId.systemDefault());
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Calculate difference
+        long daysDifference = ChronoUnit.DAYS.between(messageTime.toLocalDate(), now.toLocalDate());
+        
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        String timeStr = messageTime.format(timeFormatter);
+        
+        if (daysDifference == 0) {
+            return "Today " + timeStr;
+        } else if (daysDifference == 1) {
+            return "Yesterday " + timeStr;
+        } else if (daysDifference <= 7) {
+            DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEEE");
+            return messageTime.format(dayFormatter) + " " + timeStr;
+        } else {
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return messageTime.format(dateFormatter) + " " + timeStr;
+        }
+    }
+    
+    // Add method to check if we should show a date separator
+    private boolean shouldShowDateSeparator(Instant lastMessageTime, Instant currentMessageTime) {
+        if (lastMessageTime == null) {
+            return true; // First message
+        }
+        
+        long hoursDifference = ChronoUnit.HOURS.between(lastMessageTime, currentMessageTime);
+        return hoursDifference >= 2;
     }
 }
