@@ -109,7 +109,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                     // Get participants for this chat room, excluding current user
                     List<Participant> participants = participantRepository.findByChatRoomsId(chatRoom.getId());
                     Set<ParticipantDTO> participantDTOs = participants.stream()
-                        .filter(p -> !p.getUsers().getId().equals(userId)) // Exclude current user
+//                        .filter(p -> !p.getUsers().getId().equals(userId)) // Exclude current user
                         .map(participant -> {
                             ParticipantDTO pDto = modelMapper.map(participant, ParticipantDTO.class);
                             User user = participant.getUsers();
@@ -242,7 +242,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                     return pDto;
                 })
                 .collect(Collectors.toSet());
-            
+
             chatRoomResponseDTO.setParticipants(participantDTOs);
             
             // Set last message details if available
@@ -272,36 +272,45 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         if (chatRoomDTO.getParticipants() == null || chatRoomDTO.getParticipants().size() != 1) {
             throw new BadRequestException("PERSONAL chat rooms require exactly one other participant");
         }
-        
-        // Get the other user ID
+
         Long otherUserId = chatRoomDTO.getParticipants().iterator().next().getUserId();
-        
         if (otherUserId.equals(currentUser.getId())) {
             throw new BadRequestException("Cannot create a personal chat with yourself");
         }
-        
-        // Check if a personal chat already exists between these users
-        List<ChatRoom> existingRooms = chatRoomRepository.findPersonalChatBetweenUsers(
-                currentUser.getId(), otherUserId);
+
+        // Verify the other user exists
+        User otherUser = userService.findEntityByIdUsers(otherUserId);
+        if (otherUser == null) {
+            throw new ResourceNotFoundException("User with ID " + otherUserId + " not found");
+        }
+
+        // Check for existing room between both users - FIXED
+        List<ChatRoom> existingRooms = chatRoomRepository.findPersonalChatBetweenUsers(currentUser.getId(), otherUserId);
         
         if (!existingRooms.isEmpty()) {
-            // Return the existing room instead of creating a new one
             ChatRoom existingRoom = existingRooms.get(0);
-            return existingRoom;
+            
+            // Verify the room has exactly 2 participants and they are the correct users
+            List<Participant> participants = participantRepository.findByChatRoomsId(existingRoom.getId());
+            if (participants.size() == 2) {
+                Set<Long> participantIds = participants.stream()
+                    .map(p -> p.getUsers().getId())
+                    .collect(Collectors.toSet());
+                
+                if (participantIds.contains(currentUser.getId()) && participantIds.contains(otherUserId)) {
+                    return existingRoom;
+                }
+            }
         }
-        
-        // Get the other user
-        User otherUser = userService.findEntityByIdUsers(otherUserId);
-        
-        // Create the chat room
+
+        // Create new room using transaction to prevent race conditions
         ChatRoom chatRoom = new ChatRoom();
         chatRoom.setType(EnumRoomType.PERSONAL);
         chatRoom.setCreatedUserId(currentUser);
         chatRoom.setName(otherUser.getUsername());
-        
-        // Save the chat room first to get an ID
+
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
-        
+
         // Add current user as participant
         Participant currentUserParticipant = new Participant();
         currentUserParticipant.setUsers(currentUser);
@@ -310,10 +319,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         currentUserParticipant.setJoinDate(Instant.now());
         currentUserParticipant.setMuted(false);
         currentUserParticipant.setBlocked(false);
-        
+
         participantRepository.save(currentUserParticipant);
-        savedChatRoom.getParticipants().add(currentUserParticipant);
-        
+
         // Add other user as participant
         Participant otherUserParticipant = new Participant();
         otherUserParticipant.setUsers(otherUser);
@@ -322,10 +330,12 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         otherUserParticipant.setJoinDate(Instant.now());
         otherUserParticipant.setMuted(false);
         otherUserParticipant.setBlocked(false);
-        
+
         participantRepository.save(otherUserParticipant);
-        savedChatRoom.getParticipants().add(otherUserParticipant);
-        
+
+        // Refresh the chat room to get the updated participants
+        savedChatRoom = chatRoomRepository.findById(savedChatRoom.getId()).orElse(savedChatRoom);
+
         return savedChatRoom;
     }
 
