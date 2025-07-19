@@ -749,19 +749,12 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             chatRoomDTO.setLastMessageSenderUsername(lastMessage.getSender().getUsername());
         }
         
-        // Format the timestamp to the required format
+     // Set timestamp as Instant directly (no formatting to string)
         if (lastMessage.getTimestamp() != null) {
-            String formattedTimestamp = lastMessage.getTimestamp()
-                .atZone(ZoneId.of("UTC"))
-                .format(DATE_TIME_FORMATTER);
-            chatRoomDTO.setLastMessageTimestamp(formattedTimestamp);
+            chatRoomDTO.setLastMessageTimestamp(lastMessage.getTimestamp());
         } else {
             // Fallback to current time if timestamp is null
-            chatRoomDTO.setLastMessageTimestamp(
-                Instant.now()
-                    .atZone(ZoneId.of("UTC"))
-                    .format(DATE_TIME_FORMATTER)
-            );
+            chatRoomDTO.setLastMessageTimestamp(Instant.now());
         }
         
         // Set message type
