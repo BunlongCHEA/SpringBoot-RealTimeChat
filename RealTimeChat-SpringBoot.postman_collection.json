@@ -1,0 +1,741 @@
+{
+	"info": {
+		"_postman_id": "2f99b6c6-3d39-4b14-aec3-d26de5d360da",
+		"name": "RealTimeChat-SpringBoot",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33794548"
+	},
+	"item": [
+		{
+			"name": "Register User 1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"test\",\r\n  \"fullName\": \"test\",\r\n  \"password\": \"securePassword123\",\r\n  \"email\": \"test@example.com\",\r\n  \"avatarUrl\": \"https://example.com/avatars/default.png\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/register",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register User 2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"testuser2\",\r\n  \"displayName\": \"Test User2\",\r\n  \"password\": \"securePassword123\",\r\n  \"email\": \"testuser2@example.com\",\r\n  \"avatarUrl\": \"https://example.com/avatars/default.png\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/register",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register User 3",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"testuser3\",\r\n  \"displayName\": \"Test User3\",\r\n  \"password\": \"securePassword123\",\r\n  \"email\": \"testuser3@example.com\",\r\n  \"avatarUrl\": \"https://example.com/avatars/default.png\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/register",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login User 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract data from response\r",
+							"var response = pm.response.json();\r",
+							"\r",
+							"// Get the user identifier from request params\r",
+							"var userId = \"1\";\r",
+							"\r",
+							"// Log which user we're storing tokens for\r",
+							"console.log(\"Storing tokens for user: \" + userId);\r",
+							"\r",
+							"// Store tokens in collection variables with user-specific prefixes\r",
+							"if (response && response.data) {\r",
+							"    // Store access token\r",
+							"    if (response.data.accessToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.accessToken);\r",
+							"        console.log(\"Access token stored for \" + userId);\r",
+							"    } else if (response.data.token) {\r",
+							"        // Backward compatibility for older API\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.token);\r",
+							"        console.log(\"Access token stored for \" + userId + \" (legacy format)\");\r",
+							"    }\r",
+							"    \r",
+							"    // Store refresh token if available\r",
+							"    if (response.data.refreshToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_refreshToken\", response.data.refreshToken);\r",
+							"        console.log(\"Refresh token stored for \" + userId);\r",
+							"    }\r",
+							"    \r",
+							"    // Store username for reference\r",
+							"    if (response.data.user && response.data.user.username) {\r",
+							"        pm.collectionVariables.set(userId + \"_username\", response.data.user.username);\r",
+							"    }\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"test1\",\r\n  \"password\": \"securePassword123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/login",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login User 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract data from response\r",
+							"var response = pm.response.json();\r",
+							"\r",
+							"// Get the user identifier from request params\r",
+							"var userId = \"2\";\r",
+							"\r",
+							"// Log which user we're storing tokens for\r",
+							"console.log(\"Storing tokens for user: \" + userId);\r",
+							"\r",
+							"// Store tokens in collection variables with user-specific prefixes\r",
+							"if (response && response.data) {\r",
+							"    // Store access token\r",
+							"    if (response.data.accessToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.accessToken);\r",
+							"        console.log(\"Access token stored for \" + userId);\r",
+							"    } else if (response.data.token) {\r",
+							"        // Backward compatibility for older API\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.token);\r",
+							"        console.log(\"Access token stored for \" + userId + \" (legacy format)\");\r",
+							"    }\r",
+							"    \r",
+							"    // Store refresh token if available\r",
+							"    if (response.data.refreshToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_refreshToken\", response.data.refreshToken);\r",
+							"        console.log(\"Refresh token stored for \" + userId);\r",
+							"    }\r",
+							"    \r",
+							"    // Store username for reference\r",
+							"    if (response.data.user && response.data.user.username) {\r",
+							"        pm.collectionVariables.set(userId + \"_username\", response.data.user.username);\r",
+							"    }\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"testuser2\",\r\n  \"password\": \"securePassword123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/login",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login User 3",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract data from response\r",
+							"var response = pm.response.json();\r",
+							"\r",
+							"// Get the user identifier from request params\r",
+							"var userId = \"3\";\r",
+							"\r",
+							"// Log which user we're storing tokens for\r",
+							"console.log(\"Storing tokens for user: \" + userId);\r",
+							"\r",
+							"// Store tokens in collection variables with user-specific prefixes\r",
+							"if (response && response.data) {\r",
+							"    // Store access token\r",
+							"    if (response.data.accessToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.accessToken);\r",
+							"        console.log(\"Access token stored for \" + userId);\r",
+							"    } else if (response.data.token) {\r",
+							"        // Backward compatibility for older API\r",
+							"        pm.collectionVariables.set(userId + \"_accessToken\", response.data.token);\r",
+							"        console.log(\"Access token stored for \" + userId + \" (legacy format)\");\r",
+							"    }\r",
+							"    \r",
+							"    // Store refresh token if available\r",
+							"    if (response.data.refreshToken) {\r",
+							"        pm.collectionVariables.set(userId + \"_refreshToken\", response.data.refreshToken);\r",
+							"        console.log(\"Refresh token stored for \" + userId);\r",
+							"    }\r",
+							"    \r",
+							"    // Store username for reference\r",
+							"    if (response.data.user && response.data.user.username) {\r",
+							"        pm.collectionVariables.set(userId + \"_username\", response.data.user.username);\r",
+							"    }\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"testuser3\",\r\n  \"password\": \"securePassword123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/auth/login",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get ChatRoom",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{localhost}}/rooms",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"rooms"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Participant",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{localhost}}/participants/1",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"participants",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Message",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{localhost}}/participants/1",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"participants",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post ChatRoom PERSONAL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"type\": \"PERSONAL\",\r\n  \"participants\": [\r\n    {\r\n      \"userId\": 2\r\n    }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/rooms?currentUserId=1",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"rooms"
+					],
+					"query": [
+						{
+							"key": "currentUserId",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post ChatRoom GROUP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Family Group\",\r\n  \"type\": \"GROUP\",\r\n  \"participants\": [\r\n    {\r\n        \"userId\": 2\r\n    },\r\n    {\r\n        \"userId\": 3\r\n    }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/rooms?currentUserId=1",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"rooms"
+					],
+					"query": [
+						{
+							"key": "currentUserId",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post ChatRoom CHANNEL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{1_accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Announcements\",\r\n  \"type\": \"CHANNEL\",\r\n  \"participants\": [\r\n    {\r\n        \"userId\": 2\r\n    },\r\n    {\r\n        \"userId\": 3\r\n    }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localhost}}/rooms?currentUserId=1",
+					"host": [
+						"{{localhost}}"
+					],
+					"path": [
+						"rooms"
+					],
+					"query": [
+						{
+							"key": "currentUserId",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "token1",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "token2",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "token2",
+			"value": ""
+		},
+		{
+			"key": "2_accessToken",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "2_accessToken",
+			"value": ""
+		},
+		{
+			"key": "1_accessToken",
+			"value": ""
+		},
+		{
+			"key": "1_refreshToken",
+			"value": ""
+		},
+		{
+			"key": "1_username",
+			"value": ""
+		},
+		{
+			"key": "2_refreshToken",
+			"value": ""
+		},
+		{
+			"key": "2_username",
+			"value": ""
+		},
+		{
+			"key": "3_accessToken",
+			"value": ""
+		},
+		{
+			"key": "3_refreshToken",
+			"value": ""
+		},
+		{
+			"key": "3_username",
+			"value": ""
+		}
+	]
+}
