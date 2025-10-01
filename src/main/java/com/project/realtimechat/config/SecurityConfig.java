@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers("/user/**").permitAll()  // Allow STOMP user destinations
                 .requestMatchers("/error/**").permitAll()  // Allow error endpoints
                 .requestMatchers("/actuator/**").permitAll()  // Allow actuator endpoints
+                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll() // Allow Swagger UI and API docs
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
