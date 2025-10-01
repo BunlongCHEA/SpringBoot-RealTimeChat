@@ -13,11 +13,11 @@ import com.project.realtimechat.entity.User;
 public interface MessageStatusRepository extends JpaRepository<MessageStatus, Long> {
 	Optional<MessageStatus> findByUsersIdAndChatMessagesId(Long userId, Long chatMessageId);
 	    
-    List<MessageStatus> findByChatMessagesId(Long chatMessageId);
+//    List<MessageStatus> findByChatMessagesId(Long chatMessageId);
     
-    List<MessageStatus> findByUsersId(Long userId);
+//    List<MessageStatus> findByUsersId(Long userId);
     
-    List<MessageStatus> findByUsersIdAndStatus(Long userId, EnumStatus status);
+//    List<MessageStatus> findByUsersIdAndStatus(Long userId, EnumStatus status);
     
-    List<MessageStatus> findByChatMessagesIdAndStatus(Long chatMessageId, EnumStatus status);
+//    List<MessageStatus> findByChatMessagesIdAndStatus(Long chatMessageId, EnumStatus status);
 }
