@@ -1,6 +1,12 @@
 package com.project.realtimechat.controller;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,16 +34,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.project.realtimechat.config.WebSocketEventListener;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.ChatMessageDTO;
 import com.project.realtimechat.entity.EnumMessageType;
 import com.project.realtimechat.entity.User;
+import com.project.realtimechat.exception.BadRequestException;
 import com.project.realtimechat.repository.UserRepository;
 import com.project.realtimechat.service.ChatMessageService;
 import com.project.realtimechat.service.ParticipantService;
 
+import io.jsonwebtoken.io.IOException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -45,7 +54,7 @@ import jakarta.validation.Valid;
 public class ChatMessageController {
 	private static final Logger log = LoggerFactory.getLogger(ChatMessageController.class);
 	
-	private static final String utcString = Instant.now().toString();
+//	private static final String utcString = Instant.now().toString();
 	
 	@Autowired
 	private ChatMessageService chatMessageService;
@@ -74,7 +83,7 @@ public class ChatMessageController {
     		Authentication authentication
     		) {
     	if (authentication == null) {
-            log.error("Unauthenticated user attempted to send message to room {}", chatRoomId);
+            log.error("[{}] | Unauthenticated user attempted to send message to room {}", Instant.now(), chatRoomId);
             return;
         }
         
@@ -89,7 +98,7 @@ public class ChatMessageController {
             
             // Check if user is a participant in this chat room
             if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
-                log.warn("User {} is not a participant in chat room {}", username, chatRoomId);
+                log.warn("[{}} | User {} is not a participant in chat room {}", Instant.now(), username, chatRoomId);
                 // Send error message to user
                 messagingTemplate.convertAndSendToUser(
                     username, 
@@ -101,7 +110,7 @@ public class ChatMessageController {
             
             String content = (String) messagePayload.get("content");
             if (content == null || content.trim().isEmpty()) {
-                log.warn("Empty message content from user {}", username);
+                log.warn("[{}] | Empty message content from user {}", Instant.now(), username);
                 return;
             }
             
@@ -134,6 +143,201 @@ public class ChatMessageController {
                 "/queue/errors", 
                 "Failed to send message: " + e.getMessage()
             );
+        }
+    }
+    
+    /**
+     * WebSocket endpoint for sending image messages to a chat room
+     * Supports both image upload (base64) and image URL
+     * JSON payload format:
+     * Option 1 - Upload image: { "imageData": "base64String", "filename": "image.jpg", "contentType": "image/jpeg" }
+     * Option 2 - Image URL: { "imageUrl": "https://example.com/image.jpg" }
+     * @param chatRoomId The ID of the chat room
+     * @param messagePayload The message payload containing image data or URL
+     * @param authentication The authenticated user
+     */
+    @MessageMapping("/chat.sendImage/{chatRoomId}")
+    public void sendImageMessage(
+            @DestinationVariable Long chatRoomId,
+            @Payload Map<String, Object> messagePayload,
+            Authentication authentication) {
+    	
+    	if (authentication == null) {
+            log.error("[{}] | Unauthenticated user attempted to send image to room {}", Instant.now(), chatRoomId);
+            messagingTemplate.convertAndSendToUser(
+                "anonymous", 
+                "/queue/errors", 
+                "Authentication required"
+            );
+            return;
+        }
+    	
+    	String username = authentication.getName();
+        log.info("[{}] | User {} is sending image to room {}", 
+                Instant.now(), username, chatRoomId);
+        
+        try {
+        	// Get user ID from authenticated username
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException("User not found: " + username));
+            
+            // Check if user is a participant in this chat room
+            if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
+                log.warn("[{}] | User {} is not a participant in chat room {}", Instant.now(), username, chatRoomId);
+                messagingTemplate.convertAndSendToUser(
+                    username, 
+                    "/queue/errors", 
+                    "You are not a participant in this chat room"
+                );
+                return;
+            }
+            
+            ResponseEntity<BaseDTO<ChatMessageDTO>> response;
+            
+            // Option 1: Upload & Send image (createImageMessage) - Base64 encoded image
+            String imageData = (String) messagePayload.get("imageData");
+            String filename = (String) messagePayload.get("filename");
+            String contentType = (String) messagePayload.get("contentType");
+            
+            if (imageData != null && !imageData.trim().isEmpty()) {
+                log.info("[{}] | Processing base64 image upload for user {} in room {}", 
+                        Instant.now(), username, chatRoomId);
+                
+                try {
+                    // Convert base64 to MultipartFile
+                    MultipartFile imageFile = convertBase64ToMultipartFile(imageData, filename, contentType);
+                    response = chatMessageService.createImageMessage(chatRoomId, user.getId(), imageFile);
+                    
+                    log.info("[{}] | Base64 image uploaded and message created for user {} in room {}", 
+                            Instant.now(), username, chatRoomId);
+                } catch (Exception e) {
+                    log.error("[{}] | Error processing base64 image for user {} in room {}: {}", 
+                            Instant.now(), username, chatRoomId, e.getMessage());
+                    messagingTemplate.convertAndSendToUser(
+                        username, 
+                        "/queue/errors", 
+                        "Failed to process image upload: " + e.getMessage()
+                    );
+                    return;
+                }
+            }
+            // Option 2: Send image from URL (createImageMessageFromUrl)
+            else {
+                String imageUrl = (String) messagePayload.get("imageUrl");
+                if (imageUrl == null || imageUrl.trim().isEmpty()) {
+                    log.warn("[{}] | Neither image data nor image URL provided by user {}", Instant.now(), username);
+                    messagingTemplate.convertAndSendToUser(
+                        username, 
+                        "/queue/errors", 
+                        "Either imageData or imageUrl must be provided"
+                    );
+                    return;
+                }
+                
+                log.info("[{}] | Processing image URL for user {} in room {}: {}", 
+                        Instant.now(), username, chatRoomId, imageUrl);
+                
+                response = chatMessageService.createImageMessageFromUrl(chatRoomId, user.getId(), imageUrl);
+                log.info("[{}] | Image message from URL created for user {} in room {}", 
+                        Instant.now(), username, chatRoomId);
+            }
+            
+            // Broadcast message if successful
+            if (response.getBody() != null && response.getBody().getData() != null) {
+                ChatMessageDTO messageDTO = response.getBody().getData();
+                
+                // Add sender username to the message
+                messageDTO.setSenderName(username);
+                
+                // Broadcast to all subscribers of this chat room
+                messagingTemplate.convertAndSend(
+                        "/topic/chat/" + chatRoomId, 
+                        messageDTO);
+                
+                log.info("[{}] | Image message from {} sent to room {} successfully", 
+                        Instant.now(), username, chatRoomId);
+            }
+            
+        } catch (Exception e) {
+            log.error("[{}] | Error sending image message from {} to room {}: {}", 
+                    Instant.now(), username, chatRoomId, e.getMessage());
+            
+            messagingTemplate.convertAndSendToUser(
+                username, 
+                "/queue/errors", 
+                "Failed to send image message: " + e.getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Helper method to convert base64 string to MultipartFile
+     * @param base64Data The base64 encoded image data
+     * @param filename The original filename
+     * @param contentType The content type of the image
+     * @return MultipartFile object
+     */
+    private MultipartFile convertBase64ToMultipartFile(String base64Data, String filename, String contentType) {
+        try {
+            // Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+            if (base64Data.contains(",")) {
+                base64Data = base64Data.split(",")[1];
+            }
+            
+            byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+            
+            return new MultipartFile() {
+                @Override
+                public String getName() {
+                    return "image";
+                }
+                
+                @Override
+                public String getOriginalFilename() {
+                    return filename != null ? filename : "image.jpg";
+                }
+                
+                @Override
+                public String getContentType() {
+                    return contentType != null ? contentType : "image/jpeg";
+                }
+                
+                @Override
+                public boolean isEmpty() {
+                    return decodedBytes.length == 0;
+                }
+                
+                @Override
+                public long getSize() {
+                    return decodedBytes.length;
+                }
+                
+                @Override
+                public byte[] getBytes() throws IOException {
+                    return decodedBytes;
+                }
+                
+                @Override
+                public InputStream getInputStream() throws IOException {
+                    return new ByteArrayInputStream(decodedBytes);
+                }
+                
+                @Override
+                public void transferTo(File dest) throws IOException, IllegalStateException {
+                	 try (FileOutputStream fos = new FileOutputStream(dest)) {
+                         fos.write(decodedBytes);
+                     } catch (FileNotFoundException e) {
+                         throw new IOException("Could not create file: " + dest.getAbsolutePath(), e);
+                     } catch (IOException e) {
+                         throw new IOException("Error writing to file: " + dest.getAbsolutePath(), e);
+                     } catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                }
+            };
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid base64 image data: " + e.getMessage());
         }
     }
     
@@ -179,8 +383,8 @@ public class ChatMessageController {
                     typingMessage);
             
         } catch (Exception e) {
-            log.error("Error handling typing indicator from {} in room {}: {}", 
-                    username, chatRoomId, e.getMessage());
+            log.error("[{}] | Error handling typing indicator from {} in room {}: {}", 
+            		Instant.now(), username, chatRoomId, e.getMessage());
         }
     }
     
@@ -208,7 +412,7 @@ public class ChatMessageController {
             
             // Check if user is a participant in this chat room
             if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
-                log.warn("User {} is not authorized to join chat room {}", username, chatRoomId);
+                log.warn("[{}] | User {} is not authorized to join chat room {}", Instant.now(), username, chatRoomId);
                 return;
             }
             
@@ -228,8 +432,8 @@ public class ChatMessageController {
             		Instant.now(), username, chatRoomId);
             
         } catch (Exception e) {
-            log.error("Error handling join for user {} in room {}: {}", 
-                    username, chatRoomId, e.getMessage());
+            log.error("[{}] | Error handling join for user {} in room {}: {}", 
+            		Instant.now(), username, chatRoomId, e.getMessage());
         }
     }
     
@@ -271,8 +475,8 @@ public class ChatMessageController {
             		Instant.now(), username, chatRoomId);
             
         } catch (Exception e) {
-            log.error("Error handling leave for user {} in room {}: {}", 
-                    username, chatRoomId, e.getMessage());
+            log.error("[{}] | Error handling leave for user {} in room {}: {}", 
+            		Instant.now(), username, chatRoomId, e.getMessage());
         }
     }
     
@@ -301,11 +505,8 @@ public class ChatMessageController {
             
             return chatMessageService.getMessagesByChatRoomId(chatRoomId, pageable);
         } catch (Exception e) {
-            log.error("Error retrieving messages: {}", e.getMessage());
+            log.error("[{}] | Error retrieving messages: {}",Instant.now() ,e.getMessage());
             throw e;
         }
     }
-    
-    
-    
 }

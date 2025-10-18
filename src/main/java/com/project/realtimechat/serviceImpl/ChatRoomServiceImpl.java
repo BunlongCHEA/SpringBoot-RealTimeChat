@@ -52,8 +52,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Autowired
     private UserService userService;
     
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = 
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String utcString = Instant.now().toString();
     
 	/**
 	 * Get chat room Id

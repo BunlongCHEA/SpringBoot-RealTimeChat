@@ -39,7 +39,7 @@ import com.project.realtimechat.service.UserService;
 public class ParticipantServiceImpl implements ParticipantService {
 	private static final Logger log = LoggerFactory.getLogger(ParticipantServiceImpl.class);
 	
-	private static final String utcString = Instant.now().toString();
+//	private static final String utcString = Instant.now().toString();
 
     @Autowired
     private ParticipantRepository participantRepository;
@@ -595,7 +595,7 @@ public class ParticipantServiceImpl implements ParticipantService {
             Optional<Participant> participant = participantRepository.findByUsersIdAndChatRoomsId(userId, chatRoomId);
             
             log.debug("[{}] | Checking admin status for user {} in chat room {}", 
-                    utcString, userId, chatRoomId);
+            		Instant.now(), userId, chatRoomId);
             
             return participant.isPresent() && 
                    participant.get().getRole() == EnumRoomRole.ADMIN;
