@@ -115,7 +115,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         	// Verify the chat room exists
             ChatRoom chatRoom = chatRoomService.findEntityByChatRoomId(chatRoomId);
             
-            Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomsIdOrderByTimestampDesc(
+            Page<ChatMessage> messagePage = chatMessageRepository.findByChatRoomsIdOrderByTimestampAsc(
                     chatRoomId, pageable);
             
             List<ChatMessage> messages = messagePage.getContent();

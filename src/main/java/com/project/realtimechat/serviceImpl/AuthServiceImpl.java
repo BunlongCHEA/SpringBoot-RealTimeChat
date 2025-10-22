@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.project.realtimechat.config.JwtAuthenticationFilter;
 import com.project.realtimechat.config.JwtService;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.LoginRequest;
@@ -22,6 +23,8 @@ import com.project.realtimechat.entity.User;
 import com.project.realtimechat.exception.BadRequestException;
 import com.project.realtimechat.repository.UserRepository;
 import com.project.realtimechat.service.AuthService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -40,6 +43,9 @@ public class AuthServiceImpl implements AuthService {
     
     @Autowired
     private JwtService jwtService;
+    
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
     
     /**
      * Registers a new user with encoded password
@@ -129,4 +135,43 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Authentication failed: " + e.getMessage());
         }
     }
+    
+    /**
+     * Get current authenticated user details
+     */
+    @Override
+    public ResponseEntity<BaseDTO<UserDTO>> getCurrentUser(HttpServletRequest request) {
+        try {
+            // Get JWT from request
+            String jwt = jwtAuthenticationFilter.getJwtFromRequest(request);
+            
+            if (jwt == null || !jwtService.validateToken(jwt)) {
+                throw new BadRequestException("Invalid or missing token");
+            }
+            
+            // Get username from token
+            String username = jwtService.extractUsername(jwt);
+            
+            // Find user by username
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new BadRequestException("User not found"));
+            
+            // Convert to DTO without password
+            UserDTO userDTO = modelMapper.map(user, UserDTO.class);
+            userDTO.setPassword(null);
+            
+            BaseDTO<UserDTO> response = new BaseDTO<>(
+                    HttpStatus.OK.value(),
+                    "User details retrieved successfully",
+                    userDTO);
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to get user details: " + e.getMessage());
+        }
+    }
+    
+    
 }

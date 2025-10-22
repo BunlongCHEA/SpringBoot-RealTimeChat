@@ -488,7 +488,7 @@ public class ChatMessageController {
      * @param pageable Pagination parameters
      * @param authentication The authenticated user
      */
-    @GetMapping("/chat-room/{chatRoomId}")
+    @GetMapping("/room/{chatRoomId}")
     public ResponseEntity<BaseDTO<List<ChatMessageDTO>>> getMessagesByChatRoomId(
             @PathVariable Long chatRoomId,
             @PageableDefault(size = 20, sort = "timestamp") Pageable pageable,

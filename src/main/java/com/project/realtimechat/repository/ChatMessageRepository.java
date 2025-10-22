@@ -18,7 +18,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
 //    List<ChatMessage> findByChatRoomsId(Long chatRoomId);
     
-    Page<ChatMessage> findByChatRoomsIdOrderByTimestampDesc(Long chatRoomId, Pageable pageable);
+    Page<ChatMessage> findByChatRoomsIdOrderByTimestampAsc(Long chatRoomId, Pageable pageable);
     
 //    List<ChatMessage> findByChatRoomsIdAndTimestampAfterOrderByTimestampAsc(
 //            Long chatRoomId, Instant timestamp);

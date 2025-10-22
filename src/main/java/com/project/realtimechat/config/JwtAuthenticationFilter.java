@@ -1,4 +1,4 @@
-package com.project.realtimechat.filter;
+package com.project.realtimechat.config;
 
 import java.io.IOException;
 
@@ -12,7 +12,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.project.realtimechat.config.JwtService;
 import com.project.realtimechat.service.UserService;
 
 import jakarta.servlet.FilterChain;
@@ -74,7 +73,7 @@ private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFi
         filterChain.doFilter(request, response);
     }
     
-    private String getJwtFromRequest(HttpServletRequest request) {
+    public String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
