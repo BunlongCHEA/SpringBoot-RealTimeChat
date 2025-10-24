@@ -700,8 +700,11 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             // Save the chat room with the new system message
             chatRoomRepository.save(chatRoom);
             
-            // Just remove this participant
-            participantRepository.delete(participant);
+            // Remove this participant using the custom repository method
+            participantRepository.deleteParticipantByUserAndChatRoom(
+                leavingUser.getId(), 
+                chatRoom.getId()
+            );
         }
     }
     

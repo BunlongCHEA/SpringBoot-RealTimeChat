@@ -246,13 +246,13 @@ public class ParticipantServiceImpl implements ParticipantService {
             }
             
             // For non-personal chats, verify the adding user is an ADMIN
-            if (chatRoom.getType() != EnumRoomType.PERSONAL) {
-                if (!isUserAdminInChatRoom(addedByUserId, chatRoomId)) {
-                    throw new BadRequestException("Only admins can add participants to this chat room");
-                }
-            } else {
-                throw new BadRequestException("Cannot add participants to personal chats");
-            }
+//            if (chatRoom.getType() != EnumRoomType.PERSONAL) {
+//                if (!isUserAdminInChatRoom(addedByUserId, chatRoomId)) {
+//                    throw new BadRequestException("Only admins can add participants to this chat room");
+//                }
+//            } else {
+//                throw new BadRequestException("Cannot add participants to personal chats");
+//            }
             
             // Create and save the new participant
             Participant participant = new Participant();
