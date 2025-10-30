@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.realtimechat.config.WebSocketEventListener;
+import com.project.realtimechat.config.WebSocketEventPublisher;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.ChatMessageDTO;
 import com.project.realtimechat.entity.EnumMessageType;
@@ -68,6 +69,8 @@ public class ChatMessageController {
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
 	
+	@Autowired
+    private WebSocketEventPublisher eventPublisher;
     
 	/**
      * WebSocket endpoint for sending text messages to a chat room
@@ -128,6 +131,9 @@ public class ChatMessageController {
                 messagingTemplate.convertAndSend(
                         "/topic/chat/" + chatRoomId, 
                         messageDTO);
+                
+                // NEW: Broadcast to all participants for sidebar updates
+                eventPublisher.broadcastMessageSentNotification(chatRoomId, messageDTO);
                 
                 log.info("[{}] | Message from {} sent to room {} successfully", 
                 		Instant.now(), username, chatRoomId);

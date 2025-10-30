@@ -61,6 +61,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         // Set thread pool executor for handling messages
         registration.taskExecutor().corePoolSize(8).maxPoolSize(16).queueCapacity(100);
         
+        // ADD THESE SETTINGS
+        registration.taskExecutor().keepAliveSeconds(60);
+//        registration.taskExecutor().allowCoreThreadTimeOut(true);
+        
         log.info("[{}] | Configured WebSocket client inbound channel with auth interceptor", Instant.now());
     }
     
@@ -68,6 +72,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
     public void configureClientOutboundChannel(ChannelRegistration registration) {
         // Set thread pool executor for outbound messages
         registration.taskExecutor().corePoolSize(8).maxPoolSize(16).queueCapacity(100);
+        
+        registration.taskExecutor().keepAliveSeconds(60);
         
         log.info("[{}] | Configured WebSocket client outbound channel", Instant.now());
     }

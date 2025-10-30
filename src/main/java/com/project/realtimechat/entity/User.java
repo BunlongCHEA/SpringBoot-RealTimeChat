@@ -41,6 +41,13 @@ public class User {
     @Column(unique = true)
     private String email;
     
+    // Add these fields for online status tracking
+    @Column(name = "online",  columnDefinition = "boolean default false")
+    private boolean online;
+    
+    @Column(name = "last_seen")
+    private Instant lastSeen;
+    
     @Column(name = "is_active")
     private boolean isActive = true;
     

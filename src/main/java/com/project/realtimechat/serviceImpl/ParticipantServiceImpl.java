@@ -17,8 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.realtimechat.config.WebSocketConfig;
+import com.project.realtimechat.config.WebSocketEventListener;
+import com.project.realtimechat.config.WebSocketEventPublisher;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.ParticipantDTO;
+import com.project.realtimechat.dto.UserDTO;
 import com.project.realtimechat.entity.ChatMessage;
 import com.project.realtimechat.entity.ChatRoom;
 import com.project.realtimechat.entity.EnumMessageType;
@@ -31,6 +34,7 @@ import com.project.realtimechat.exception.ResourceNotFoundException;
 import com.project.realtimechat.repository.ChatMessageRepository;
 import com.project.realtimechat.repository.ChatRoomRepository;
 import com.project.realtimechat.repository.ParticipantRepository;
+import com.project.realtimechat.repository.UserRepository;
 import com.project.realtimechat.service.ChatRoomService;
 import com.project.realtimechat.service.ParticipantService;
 import com.project.realtimechat.service.UserService;
@@ -54,10 +58,16 @@ public class ParticipantServiceImpl implements ParticipantService {
     private UserService userService;
     
     @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
     private ChatRoomService chatRoomService;
     
     @Autowired
     private ModelMapper modelMapper;
+    
+    @Autowired
+    private WebSocketEventPublisher webSocketEventPublisher;
     
     /**
      * Retrieves a participant by their ID
@@ -274,6 +284,9 @@ public class ParticipantServiceImpl implements ParticipantService {
             
             // Convert to DTO and return response
             ParticipantDTO participantDTO = modelMapper.map(savedParticipant, ParticipantDTO.class);
+            
+            // Broadcast participant addition via WebSocket
+            webSocketEventPublisher.broadcastParticipantAdded(chatRoomId, participantDTO, addedByUser.getUsername());
             
             BaseDTO<ParticipantDTO> response = new BaseDTO<>(HttpStatus.CREATED.value(), 
                     "Participant added successfully", participantDTO);
@@ -504,7 +517,7 @@ public class ParticipantServiceImpl implements ParticipantService {
      */
     @Override
     @Transactional
-    public ResponseEntity<BaseDTO<ParticipantDTO>> updateOnlineStatus(Long userId, boolean online) {
+    public ResponseEntity<BaseDTO<ParticipantDTO>> updateOnlineStatus(Long userId, Boolean online) {
         try {
             // Verify the user exists
             User user = userService.findEntityByIdUsers(userId);
@@ -514,13 +527,32 @@ public class ParticipantServiceImpl implements ParticipantService {
             // This is a simplified implementation.
             
             // For the purpose of this example, we'll just return the status in the DTO
-            ParticipantDTO participantDTO = new ParticipantDTO();
-            participantDTO.setUserId(userId);
-            participantDTO.setOnline(online);
-            
+            user.setOnline(online);
             if (!online) {
-                participantDTO.setLastSeen(Instant.now());
+                user.setLastSeen(Instant.now());
+                user.setLastLogin(Instant.now());
+                user.setUpdatedAt(Instant.now());
             }
+            
+            // Save the updated user
+            User updatedUser = userRepository.save(user);
+            
+            ParticipantDTO participantDTO = new ParticipantDTO();
+            participantDTO.setUserId(updatedUser.getId());
+            participantDTO.setUsername(updatedUser.getUsername());
+            participantDTO.setFullName(updatedUser.getFullName());
+            participantDTO.setOnline(updatedUser.isOnline());
+            participantDTO.setLastSeen(updatedUser.getLastSeen() != null ? updatedUser.getLastSeen() : null);
+            
+//            Participant participant = new Participant();
+//            participant.setUserId(userId);
+            
+//            if (!online) {
+//            	participant.setLastSeen(Instant.now());
+//            }
+            
+//            Participant updatedParticipant = participantRepository.save(participant);
+//            ParticipantDTO participantDTO = modelMapper.map(updatedParticipant, ParticipantDTO.class);
             
             BaseDTO<ParticipantDTO> response = new BaseDTO<>(HttpStatus.OK.value(), 
                     "Online status updated successfully", participantDTO);
@@ -552,8 +584,8 @@ public class ParticipantServiceImpl implements ParticipantService {
             // For the purpose of this example, we'll just return the status in the DTO
             ParticipantDTO participantDTO = new ParticipantDTO();
             participantDTO.setUserId(userId);
-            participantDTO.setOnline(false);
-            participantDTO.setLastSeen(Instant.now());
+//            participantDTO.setOnline(false);
+//            participantDTO.setLastSeen(Instant.now());
             
             BaseDTO<ParticipantDTO> response = new BaseDTO<>(HttpStatus.OK.value(), 
                     "Last seen updated successfully", participantDTO);

@@ -27,7 +27,7 @@ public interface ParticipantService {
     // Status Management
     ResponseEntity<BaseDTO<ParticipantDTO>> updateParticipantStatus(Long participantId, Boolean muted, Boolean blocked);
     ResponseEntity<BaseDTO<ParticipantDTO>> updateLastReadMessageId(Long userId, Long chatRoomId, Long messageId);
-    ResponseEntity<BaseDTO<ParticipantDTO>> updateOnlineStatus(Long userId, boolean online);
+    ResponseEntity<BaseDTO<ParticipantDTO>> updateOnlineStatus(Long userId, Boolean online);
     ResponseEntity<BaseDTO<ParticipantDTO>> updateLastSeen(Long userId, LocalDateTime lastSeen);
     
     // Helper methods

@@ -56,13 +56,6 @@ public class Participant {
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
     
-    // Add these fields for online status tracking
-    @Column(name = "online", nullable = false, columnDefinition = "boolean default false")
-    private boolean online;
-    
-    @Column(name = "last_seen")
-    private Instant lastSeen;
-    
     
     // Add these transient fields for user details (not stored in DB)
     @Transient

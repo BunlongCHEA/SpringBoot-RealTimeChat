@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.realtimechat.config.WebSocketEventPublisher;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.MessageStatusDTO;
 import com.project.realtimechat.entity.ChatMessage;
@@ -37,6 +38,9 @@ public class MessageStatusServiceImpl implements MessageStatusService {
     
     @Autowired
     private ModelMapper modelMapper;
+    
+    @Autowired
+    private WebSocketEventPublisher webSocketEventPublisher;
     
     /**
      * Creates a new message status for a user and message
@@ -75,6 +79,10 @@ public class MessageStatusServiceImpl implements MessageStatusService {
             // Convert to DTO
             MessageStatusDTO messageStatusDTO = modelMapper.map(savedMessageStatus, MessageStatusDTO.class);
             
+            if (chatMessage != null) {
+                webSocketEventPublisher.broadcastMessageStatus(messageId, userId, status, chatMessage.getChatRooms().getId());
+            }
+            
             BaseDTO<MessageStatusDTO> response = new BaseDTO<>(
                 HttpStatus.CREATED.value(),
                 "Message status created successfully",
@@ -108,8 +116,8 @@ public class MessageStatusServiceImpl implements MessageStatusService {
             }
             
             // Fetch user and chat message to ensure they exist
-            findEntityByUserId(userId);
-            findEntityByMessageId(messageId);
+            User user = findEntityByUserId(userId);
+            ChatMessage chatMessage = findEntityByMessageId(messageId);
             
             // Find the existing message status
             MessageStatus messageStatus = messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
@@ -127,6 +135,10 @@ public class MessageStatusServiceImpl implements MessageStatusService {
             
             // Convert to DTO
             MessageStatusDTO messageStatusDTO = modelMapper.map(updatedMessageStatus, MessageStatusDTO.class);
+            
+            if (chatMessage != null) {
+                webSocketEventPublisher.broadcastMessageStatus(messageId, userId, status, chatMessage.getChatRooms().getId());
+            }
             
             BaseDTO<MessageStatusDTO> response = new BaseDTO<>(
                 HttpStatus.OK.value(),

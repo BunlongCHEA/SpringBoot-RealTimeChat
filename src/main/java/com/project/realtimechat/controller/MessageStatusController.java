@@ -18,7 +18,7 @@ import com.project.realtimechat.entity.EnumStatus;
 import com.project.realtimechat.service.MessageStatusService;
 
 @RestController
-@RequestMapping("/api/messagestatus")
+@RequestMapping("/api/message-status")
 public class MessageStatusController {
 	@Autowired
 	private MessageStatusService messageStatusService;

@@ -21,8 +21,10 @@ public class UserDTO {
     private String avatarUrl;
     private String password;
     private String email;
-    private boolean isActive = true;
-    private boolean isLocked = false;
+    private boolean online;
+    private Instant lastSeen;
+    private boolean isActive;
+    private boolean isLocked;
     private Instant lastLogin;
     private Instant createdAt;
     private Instant updatedAt;

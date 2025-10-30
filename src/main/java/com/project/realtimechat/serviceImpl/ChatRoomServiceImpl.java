@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.realtimechat.config.WebSocketEventPublisher;
 import com.project.realtimechat.dto.BaseDTO;
 import com.project.realtimechat.dto.ChatRoomDTO;
 import com.project.realtimechat.dto.ParticipantDTO;
@@ -51,6 +52,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private WebSocketEventPublisher webSocketEventPublisher;
     
     private static final String utcString = Instant.now().toString();
     
@@ -226,6 +230,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             
             // Convert to DTO
             ChatRoomDTO chatRoomResponseDTO = modelMapper.map(chatRoom, ChatRoomDTO.class);
+            
+            // Broadcast to all participants via WebSocket
+            webSocketEventPublisher.broadcastNewChatRoom(chatRoomDTO);
             
             // Set participants
             List<Participant> participants = participantRepository.findByChatRoomsId(chatRoom.getId());
