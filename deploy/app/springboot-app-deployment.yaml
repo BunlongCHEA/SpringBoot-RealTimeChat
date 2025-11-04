@@ -147,9 +147,8 @@ metadata:
   annotations:
     # Use NGINX Ingress Controller
     kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/ingress.class: "nginx"
 
-    # Cloudflare specific annotations
+    # Cloudflare Basic proxy settings
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
@@ -158,10 +157,13 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Cloudflare handles HTTPS
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
 
-    # Add custom headers to pass Cloudflare info to application
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Forwarded-Proto: https";
-      more_set_headers "X-Forwarded-Port: 443";
+    # Use standard annotations instead of snippets
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/upstream-vhost: "chatspringboot.bunlong.site"
+
+    # Add real IP forwarding (safer than snippets)
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/enable-real-ip: "true"
 spec:
   rules:
   - host: chatspringboot.bunlong.site
