@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: springboot-app
-        image: bunlongchea/springboot-app:latest  # Replace with your actual image
+        image: registry.gitlab.com/bunlongchea/springboot-realtimechat:latest  # Replace with your actual image
         ports:
         - containerPort: 8080
           name: http
