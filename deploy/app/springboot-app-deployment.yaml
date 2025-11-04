@@ -8,7 +8,7 @@ metadata:
     app: springboot-app
     version: "1.0.0"
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: springboot-app
@@ -145,14 +145,23 @@ metadata:
   name: springboot-app-ingress
   namespace: production
   annotations:
-    kubernetes.io/ingress.class: "gce"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # Use NGINX Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ingress.class: "nginx"
+
+    # Cloudflare specific annotations
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+
     nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Cloudflare handles HTTPS
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-    ingress.gcp.kubernetes.io/load-balancer-type: "External"
-    cloud.google.com/load-balancer-type: "External"
-  labels:
-    app: springboot-app
+
+    # Add custom headers to pass Cloudflare info to application
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Forwarded-Proto: https";
+      more_set_headers "X-Forwarded-Port: 443";
 spec:
   rules:
   - host: chatspringboot.bunlong.site
