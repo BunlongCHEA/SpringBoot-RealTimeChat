@@ -27,6 +27,8 @@ build:
     - sed -i "s|spring.datasource.url=|spring.datasource.url=$PG_URL|g" ./src/main/resources/application.properties
     - sed -i "s|spring.datasource.username=|spring.datasource.url=$PG_USERNAME|g" ./src/main/resources/application.properties
     - sed -i "s|spring.datasource.password=|spring.datasource.url=$PG_PASSWORD|g" ./src/main/resources/application.properties
+    - sed -i "s|spring.jpa.hibernate.ddl-auto=create-drop|spring.jpa.hibernate.ddl-auto=update|g" ./src/main/resources/application.properties
+    - sed -i "s|spring.jpa.show-sql=true|spring.jpa.show-sql=false|g" ./src/main/resources/application.properties
 
     # Update MongoDB connection string to use the internal Kubernetes service
     - sed -i "s|mongodb+srv://<mongodb_user>|mongodb://admin:$MONGO_PASSWORD@mongodb-service.production.svc.cluster.local:27017/MongoDB?authSource=admin|g" ./src/main/resources/application.properties

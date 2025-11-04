@@ -1,0 +1,250 @@
+# Deployment for Spring Boot application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-app-deployment
+  namespace: production
+  labels:
+    app: springboot-app
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+        tier: backend
+        database-client: "allowed"  # For PostgreSQL access
+    spec:
+      containers:
+      - name: springboot-app
+        image: bunlongchea/springboot-app:latest  # Replace with your actual image
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: springboot-app-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: springboot-app-secret
+              key: DB_PASSWORD
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: springboot-app-secret
+              key: DB_NAME
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: springboot-app-secret
+              key: JWT_SECRET
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+      volumes:
+      - name: config-volume
+        configMap:
+          name: springboot-app-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+		
+---
+# Secret for Spring Boot application
+apiVersion: v1
+kind: Secret
+metadata:
+  name: springboot-app-secret
+  namespace: production
+type: Opaque
+data:
+  # Database connection secrets (base64 encoded)
+  # postgres
+  DB_USERNAME: cG9zdGdyZXM=
+  # strongpassword123
+  DB_PASSWORD: c3Ryb25ncGFzc3dvcmQxMjM=
+  # realtimechat
+  DB_NAME: cmVhbHRpbWVjaGF0
+  # jwt-secret
+  JWT_SECRET: 1de549fe4ebc93bf42b98b24fc5f617469e74d475a655d3df35fe2dce9268133e023c6471a99a72dc420e04389a4e6f8
+
+---
+# ConfigMap for Spring Boot application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springboot-app-config
+  namespace: production
+data:
+  # Just environment-specific values
+  database.host: "jdbc:postgresql://postgres-service:5432/realtimechat"
+  database.port: "5432"
+  app.environment: "production"
+  logging.level: "INFO"
+		
+---
+# Service for Spring Boot application
+apiVersion: v1
+kind: Service
+metadata:
+  name: springboot-app-service
+  namespace: production
+  labels:
+    app: springboot-app
+    service-type: backend-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: springboot-app
+
+---
+# Ingress for external access via Cloudflare
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: springboot-app-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Cloudflare handles HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+    cloud.google.com/load-balancer-type: "External"
+  labels:
+    app: springboot-app
+spec:
+  rules:
+  - host: chatspringboot.bunlong.site
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: springboot-app-service
+            port:
+              number: 80
+
+---
+# NetworkPolicy for Spring Boot application security
+#apiVersion: networking.k8s.io/v1
+#kind: NetworkPolicy
+#metadata:
+#  name: springboot-app-network-policy
+#  namespace: production
+#spec:
+#  podSelector:
+#    matchLabels:
+#      app: springboot-app
+#  policyTypes:
+#  - Ingress
+#  - Egress
+#  ingress:
+#  # Allow traffic from ingress controller
+#  - from: []
+#    ports:
+#    - protocol: TCP
+#      port: 8080
+#  egress:
+#  # Allow connection to PostgreSQL in default namespace
+#  - to:
+#    - namespaceSelector:
+#        matchLabels:
+#          name: production
+#    - podSelector:
+#        matchLabels:
+#          app: postgres
+#    ports:
+#    - protocol: TCP
+#      port: 5432
+#  # Allow DNS resolution
+#  - to: []
+#    ports:
+#    - protocol: UDP
+#      port: 53
+#    - protocol: TCP
+#      port: 53
+#  # Allow HTTPS outbound (for external APIs)
+#  - to: []
+#    ports:
+#    - protocol: TCP
+#      port: 443
+#    - protocol: TCP
+#      port: 80
+
+---
+# HorizontalPodAutoscaler for auto-scaling
+#apiVersion: autoscaling/v2
+#kind: HorizontalPodAutoscaler
+#metadata:
+#  name: springboot-app-hpa
+#  namespace: production
+#spec:
+#  scaleTargetRef:
+#    apiVersion: apps/v1
+#    kind: Deployment
+#    name: springboot-app-deployment
+#  minReplicas: 3
+#  maxReplicas: 10
+#  metrics:
+#  - type: Resource
+#    resource:
+#      name: cpu
+#      target:
+#        type: Utilization
+#        averageUtilization: 70
+#  - type: Resource
+#    resource:
+#      name: memory
+#      target:
+#        type: Utilization
+#        averageUtilization: 80
