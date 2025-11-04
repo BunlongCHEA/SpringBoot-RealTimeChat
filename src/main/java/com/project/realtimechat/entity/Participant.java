@@ -70,6 +70,12 @@ public class Participant {
     @Transient
     private String fullName;
     
+    @Transient
+    private Instant lastSeen;
+    
+    @Transient
+    private Boolean online;
+    
     // Getters that populate the transient fields for ModelMapper
     public Long getUserId() {
         return users != null ? users.getId() : null;
@@ -85,5 +91,13 @@ public class Participant {
     
     public String getFullName() {
         return users != null ? users.getFullName() : null;
+    }
+    
+    public Instant getLastSeen() {
+    	return users != null ? users.getLastSeen() : null;
+    }
+    
+    public Boolean getOnline() {
+    	return users != null ? users.getOnline() : null;
     }
 }

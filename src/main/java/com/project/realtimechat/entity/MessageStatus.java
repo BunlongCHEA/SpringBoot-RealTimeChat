@@ -29,8 +29,12 @@ public class MessageStatus {
     private Long id;
 	
 	@ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User users;
+    @JoinColumn(name = "user_received_id", nullable = false)
+    private User usersReceived;
+	
+	@ManyToOne
+    @JoinColumn(name = "user_sent_id", nullable = false)
+    private User usersSent;
 	
 	@ManyToOne
     @JoinColumn(name = "message_id", nullable = false)
@@ -46,20 +50,21 @@ public class MessageStatus {
     private Instant timestamp;
     
     
-    @Transient
-    private Long userId;
+    // Add these transient fields for user details (not stored in DB)
+//    @Transient
+//    private Long userId;
+//
+//    @Transient
+//    private Long messageId;
 
-    @Transient
-    private Long messageId;
+    // Getters that populate the transient fields for ModelMapper
 
-    // Getters for transient fields
-
-    public Long getUserId() {
-        return users != null ? users.getId() : null;
-    }
-
-    public Long getMessageId() {
-        return chatMessages != null ? chatMessages.getId() : null;
-    }
+//    public Long getUserId() {
+//        return users != null ? users.getId() : null;
+//    }
+//
+//    public Long getMessageId() {
+//        return chatMessages != null ? chatMessages.getId() : null;
+//    }
 }
 

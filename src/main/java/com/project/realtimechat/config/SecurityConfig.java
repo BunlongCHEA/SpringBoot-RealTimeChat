@@ -65,7 +65,7 @@ public class SecurityConfig {
     	CorsConfiguration configuration = new CorsConfiguration();
     	
     	// Set allowed origins
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://127.0.0.1:3000"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://127.0.0.1:3000", "https://chatnextjs.bunlong.site"));
         
         // Set allowed methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

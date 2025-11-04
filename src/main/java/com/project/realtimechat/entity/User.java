@@ -43,7 +43,7 @@ public class User {
     
     // Add these fields for online status tracking
     @Column(name = "online",  columnDefinition = "boolean default false")
-    private boolean online;
+    private Boolean online;
     
     @Column(name = "last_seen")
     private Instant lastSeen;

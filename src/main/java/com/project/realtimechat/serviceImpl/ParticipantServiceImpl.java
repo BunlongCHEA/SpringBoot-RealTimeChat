@@ -541,7 +541,7 @@ public class ParticipantServiceImpl implements ParticipantService {
             participantDTO.setUserId(updatedUser.getId());
             participantDTO.setUsername(updatedUser.getUsername());
             participantDTO.setFullName(updatedUser.getFullName());
-            participantDTO.setOnline(updatedUser.isOnline());
+            participantDTO.setOnline(updatedUser.getOnline());
             participantDTO.setLastSeen(updatedUser.getLastSeen() != null ? updatedUser.getLastSeen() : null);
             
 //            Participant participant = new Participant();

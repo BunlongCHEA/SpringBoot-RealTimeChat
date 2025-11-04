@@ -39,10 +39,11 @@ public class MessageStatusController {
         return messageStatusService.updateMessageStatus(userId, messageId, status);
     }
 	
-	@GetMapping("/user/{userId}/message/{messageId}")
+	@GetMapping("/user/message")
 	public ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(
-            @PathVariable Long userId,
-            @PathVariable Long messageId) {   
-        return messageStatusService.getMessageStatusByUserAndMessage(userId, messageId);
+			@RequestParam Long userId,
+			@RequestParam Long messageId,
+			@RequestParam(defaultValue = "true") boolean isReceivedUser) {   
+        return messageStatusService.getMessageStatusByUserAndMessage(userId, messageId, isReceivedUser);
     }
 }

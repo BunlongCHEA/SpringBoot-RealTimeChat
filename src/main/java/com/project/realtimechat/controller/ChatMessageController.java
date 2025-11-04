@@ -515,4 +515,9 @@ public class ChatMessageController {
             throw e;
         }
     }
+    
+    @GetMapping("/{messageId}")
+    public ResponseEntity<BaseDTO<ChatMessageDTO>> getMessageById(@PathVariable Long messageId) {
+        return chatMessageService.getMessageById(messageId);
+    }
 }

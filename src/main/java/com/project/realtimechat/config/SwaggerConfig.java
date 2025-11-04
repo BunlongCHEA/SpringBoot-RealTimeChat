@@ -36,7 +36,7 @@ public class SwaggerConfig {
                                 .url("http://localhost:" + serverPort)
                                 .description("Development Server"),
                         new Server()
-                                .url("https://your-production-url.com")
+                                .url("https://chatspringboot.bunlong.site")
                                 .description("Production Server")
                 ));
     }

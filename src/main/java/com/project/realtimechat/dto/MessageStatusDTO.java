@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageStatusDTO {
-	private Long userId;
+	private Long userReceivedId;
+	private Long userSentId;
 	private Long messageId;
     private EnumStatus status;
     private Instant timestamp;

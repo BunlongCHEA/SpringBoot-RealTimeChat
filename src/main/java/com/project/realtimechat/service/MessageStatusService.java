@@ -14,5 +14,5 @@ public interface MessageStatusService {
     
     ResponseEntity<BaseDTO<MessageStatusDTO>> updateMessageStatus(Long userId, Long messageId, EnumStatus status);
     
-    ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(Long userId, Long messageId);
+    ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(Long userId, Long messageId, boolean isReceivedUser);
  }

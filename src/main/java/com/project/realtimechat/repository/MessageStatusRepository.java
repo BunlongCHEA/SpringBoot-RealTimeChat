@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import com.project.realtimechat.entity.ChatMessage;
 import com.project.realtimechat.entity.EnumStatus;
@@ -11,7 +12,10 @@ import com.project.realtimechat.entity.MessageStatus;
 import com.project.realtimechat.entity.User;
 
 public interface MessageStatusRepository extends JpaRepository<MessageStatus, Long> {
-	Optional<MessageStatus> findByUsersIdAndChatMessagesId(Long userId, Long chatMessageId);
+//	@Query("SELECT ms FROM MessageStatus ms WHERE ms.users.id = :userId AND ms.chatMessages.id = :messageId")
+	Optional<MessageStatus> findByUsersReceivedIdAndChatMessagesId(Long userReceivedId, Long chatMessageId);
+	
+	Optional<MessageStatus> findByUsersSentIdAndChatMessagesId(Long userSentId, Long chatMessageId);
 	    
 //    List<MessageStatus> findByChatMessagesId(Long chatMessageId);
     

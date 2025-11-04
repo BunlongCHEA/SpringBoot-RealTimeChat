@@ -2,6 +2,7 @@ package com.project.realtimechat.repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,11 +13,14 @@ import org.springframework.stereotype.Repository;
 
 import com.project.realtimechat.entity.ChatMessage;
 import com.project.realtimechat.entity.EnumMessageType;
+import com.project.realtimechat.entity.User;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
 //    List<ChatMessage> findByChatRoomsId(Long chatRoomId);
+	
+	Optional<ChatMessage> findById(Long id);
     
     Page<ChatMessage> findByChatRoomsIdOrderByTimestampAsc(Long chatRoomId, Pageable pageable);
     

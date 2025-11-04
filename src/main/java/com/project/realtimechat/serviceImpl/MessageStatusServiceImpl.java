@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,9 @@ import com.project.realtimechat.service.MessageStatusService;
 
 @Service
 public class MessageStatusServiceImpl implements MessageStatusService {
+	
+	private static final Logger log = LoggerFactory.getLogger(MessageStatusServiceImpl.class);
+	
 	@Autowired
     private MessageStatusRepository messageStatusRepository;
     
@@ -53,23 +58,25 @@ public class MessageStatusServiceImpl implements MessageStatusService {
     public ResponseEntity<BaseDTO<MessageStatusDTO>> createMessageStatus(Long userId, Long messageId, EnumStatus status) {
         try {
             // Validate inputs
-            if (userId == null || messageId == null || status == null) {
-                throw new BadRequestException("User ID, Message ID, and Status are required");
-            }
+//            if (userId == null || messageId == null || status == null) {
+//                throw new BadRequestException("User ID, Message ID, and Status are required");
+//            }
             
             // Fetch user and chat message
             User user = findEntityByUserId(userId);
             ChatMessage chatMessage = findEntityByMessageId(messageId);
             
             // Check if message status already exists
-            messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
+            messageStatusRepository.findByUsersReceivedIdAndChatMessagesId(userId, messageId)
                     .ifPresent(existingStatus -> {
                         throw new BadRequestException("Message status already exists for this user and message");
                     });
             
             // Create new message status
             MessageStatus messageStatus = new MessageStatus();
-            messageStatus.setUsers(user);
+            messageStatus.setUsersReceived(user);
+            
+            messageStatus.setUsersSent(chatMessage.getSender());
             messageStatus.setChatMessages(chatMessage);
             messageStatus.setStatus(status);
             messageStatus.setTimestamp(Instant.now());
@@ -111,21 +118,25 @@ public class MessageStatusServiceImpl implements MessageStatusService {
     public ResponseEntity<BaseDTO<MessageStatusDTO>> updateMessageStatus(Long userId, Long messageId, EnumStatus status) {
         try {
             // Validate inputs
-            if (userId == null || messageId == null || status == null) {
-                throw new BadRequestException("User ID, Message ID, and Status are required");
-            }
+//            if (userId == null || messageId == null || status == null) {
+//                throw new BadRequestException("User ID, Message ID, and Status are required");
+//            }
             
             // Fetch user and chat message to ensure they exist
             User user = findEntityByUserId(userId);
             ChatMessage chatMessage = findEntityByMessageId(messageId);
             
+            log.debug("[{}] | Checking User ID {} with Chat Message ID {}", 
+            		Instant.now(), userId, messageId);
+            
+            
             // Find the existing message status
-            MessageStatus messageStatus = messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
+            MessageStatus messageStatus = messageStatusRepository.findByUsersReceivedIdAndChatMessagesId(userId, messageId)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Message status not found for user ID: " + userId + " and message ID: " + messageId));
             
             // Validate status transition
-            validateStatusTransition(messageStatus.getStatus(), status);
+//            validateStatusTransition(messageStatus.getStatus(), status);
             
             // Update message status
             messageStatus.setStatus(status);
@@ -158,21 +169,21 @@ public class MessageStatusServiceImpl implements MessageStatusService {
     }
     
     /**
-     * Gets a message status for a specific user and message
-     * @param userId The ID of the user
+     * Gets a message status for a specific received user and message
+     * @param userId The ID of the received user
      * @param messageId The ID of the message
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(Long userId, Long messageId) {
+    public ResponseEntity<BaseDTO<MessageStatusDTO>> getMessageStatusByUserAndMessage(Long userId, Long messageId, boolean isReceivedUser) {
         try {
             // Validate inputs
-            if (userId == null || messageId == null) {
-                throw new BadRequestException("User ID and Message ID are required");
-            }
+//            if (userId == null || messageId == null) {
+//                throw new BadRequestException("User ID and Message ID are required");
+//            }
             
             // Find the message status
-            MessageStatus messageStatus = findMessageStatusByUserAndMessage(userId, messageId);
+            MessageStatus messageStatus = findMessageStatusByUserAndMessage(userId, messageId, isReceivedUser);
             
             // Convert to DTO
             MessageStatusDTO messageStatusDTO = modelMapper.map(messageStatus, MessageStatusDTO.class);
@@ -200,10 +211,20 @@ public class MessageStatusServiceImpl implements MessageStatusService {
      * @param userId The ID of the user
      * @param messageId The ID of the message
      */
-    private MessageStatus findMessageStatusByUserAndMessage(Long userId, Long messageId) {
-        return messageStatusRepository.findByUsersIdAndChatMessagesId(userId, messageId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Message status not found for user ID: " + userId + " and message ID: " + messageId));
+    private MessageStatus findMessageStatusByUserAndMessage(Long userId, Long messageId, boolean isReceivedUser) {
+//        return messageStatusRepository.findByUsersReceivedIdAndChatMessagesId(userId, messageId)
+//                .orElseThrow(() -> new ResourceNotFoundException(
+//                        "Message status not found for user ID: " + userId + " and message ID: " + messageId));
+    	
+    	if (isReceivedUser) {
+            return messageStatusRepository.findByUsersReceivedIdAndChatMessagesId(userId, messageId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Message status not found for RECEIVED user ID: " + userId + " and message ID: " + messageId));
+        } else {
+            return messageStatusRepository.findByUsersSentIdAndChatMessagesId(userId, messageId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Message status not found for SENT user ID: " + userId + " and message ID: " + messageId));
+        }
     }
     
     /**
