@@ -1,8 +1,11 @@
 # Multi-stage build for production
-FROM openjdk:25-jdk-slim as build
+FROM openjdk:26-ea-21-slim as build
 
 # Set working directory
 WORKDIR /app
+
+# Install curl for health checks in build stage
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Copy Maven wrapper and pom.xml first for better layer caching
 COPY mvnw .
@@ -23,7 +26,12 @@ RUN ./mvnw clean package -DskipTests
 
 
 # Production stage
-FROM openjdk:25-jre-slim
+#FROM openjdk:25-jre-slim
+# Multi-stage build for production
+FROM openjdk:26-ea-21-slim
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
