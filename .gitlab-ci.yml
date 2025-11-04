@@ -12,7 +12,7 @@ variables:
 
 stages:
   - build
-#  - deploy
+  - deploy
 
 # Build and Push Docker Image
 build:
