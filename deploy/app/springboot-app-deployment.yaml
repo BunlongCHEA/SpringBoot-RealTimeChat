@@ -48,10 +48,6 @@ spec:
               key: JWT_SECRET
         - name: SPRING_PROFILES_ACTIVE
           value: "production"
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config
-          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -83,14 +79,6 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 30
-      volumes:
-      - name: config-volume
-        configMap:
-          name: springboot-app-config
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
 		
 ---
 # Secret for Spring Boot application
