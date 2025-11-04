@@ -154,6 +154,11 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
 
+    # CORS headers for Swagger and API
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://ecommerceapi.bunlong.site,https://www.ecommerceapi.bunlong.site,https://ecommercevue.bunlong.site,https://www.ecommercevue.bunlong.site"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+
     nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Cloudflare handles HTTPS
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
 
