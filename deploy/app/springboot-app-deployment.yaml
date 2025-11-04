@@ -79,7 +79,11 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 30
-		
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+
 ---
 # Secret for Spring Boot application
 apiVersion: v1
@@ -112,7 +116,7 @@ data:
   database.port: "5432"
   app.environment: "production"
   logging.level: "INFO"
-		
+
 ---
 # Service for Spring Boot application
 apiVersion: v1
@@ -162,7 +166,7 @@ spec:
             port:
               number: 80
 
----
+#---
 # NetworkPolicy for Spring Boot application security
 #apiVersion: networking.k8s.io/v1
 #kind: NetworkPolicy
@@ -209,7 +213,7 @@ spec:
 #    - protocol: TCP
 #      port: 80
 
----
+#---
 # HorizontalPodAutoscaler for auto-scaling
 #apiVersion: autoscaling/v2
 #kind: HorizontalPodAutoscaler
