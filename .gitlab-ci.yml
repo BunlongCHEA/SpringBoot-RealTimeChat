@@ -46,3 +46,47 @@ build:
   only:
     - main
     - develop
+
+# Deploy app & database to GKE using kubectl & ArgoCD
+deploy:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  before_script:
+    # Decode base64 and create temporary JSON file
+    - echo $GCP_SERVICE_ACCOUNT_KEY | base64 -d > /tmp/gcp-key.json
+    # Authenticate gcloud CLI with the service account
+    - gcloud auth activate-service-account --key-file /tmp/gcp-key.json
+    # Set the GCP project context, [MASK] from GitLab Variables
+    - gcloud config set project $GCP_PROJECT_ID
+    # Get GKE cluster credentials for kubectl
+    - gcloud container clusters get-credentials $GKE_CLUSTER_NAME --zone $GKE_CLUSTER_ZONE
+    # Install kubectl if not already available in the image
+    - gcloud components install kubectl
+    # Download and setup kubectl binary, version v1.34.1 is released September 9, 2025
+    # - curl -sSL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl
+    # - chmod +x /usr/local/bin/kubectl
+  script:
+    # Create namespace if it doesn't exist
+    - kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
+
+    # Apply ArgoCD app & DB manifests for deployment
+    - kubectl apply -f deploy/argocd/db/
+    - kubectl apply -f deploy/argocd/app
+
+    # Optionally, trigger sync immediately; -n argocd: namespace where ArgoCD is installed, use for store metadata of db & application, but actual build is in production namespace
+    - |
+      if kubectl get application postgres -n argocd >/dev/null 2>&1; then
+        kubectl patch application postgres -n argocd --type merge -p '{"operation":{"sync":{"syncStrategy":{"sync":{}}}}}' || true
+      fi
+    - |
+      if kubectl get application springboot-chat -n argocd >/dev/null 2>&1; then
+        kubectl patch application springboot-chat -n argocd --type merge -p '{"operation":{"sync":{"syncStrategy":{"sync":{}}}}}' || true
+      fi
+    - |
+      if kubectl get application mongodb -n argocd >/dev/null 2>&1; then
+        kubectl patch application mongodb -n argocd --type merge -p '{"operation":{"sync":{"syncStrategy":{"sync":{}}}}}' || true
+      fi
+  when: manual
+  only:
+    - main
+    - develop
