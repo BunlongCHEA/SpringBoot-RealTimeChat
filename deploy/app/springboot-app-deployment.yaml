@@ -26,21 +26,48 @@ spec:
         - containerPort: 8080
           name: http
         env:
-        - name: DB_USERNAME
+        # Inject ALL ConfigMap values as environment variables
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: springboot-app-config
+              key: SPRING_DATASOURCE_URL
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          valueFrom:
+            configMapKeyRef:
+              name: springboot-app-config
+              key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        - name: SPRING_JPA_SHOW_SQL
+          valueFrom:
+            configMapKeyRef:
+              name: springboot-app-config
+              key: SPRING_JPA_SHOW_SQL
+        - name: JWT_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              name: springboot-app-config
+              key: JWT_EXPIRATION
+        - name: JWT_REFRESH_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              name: springboot-app-config
+              key: JWT_REFRESH_EXPIRATION
+        # Secret values
+        - name: SPRING_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
               name: springboot-app-secret
-              key: DB_USERNAME
-        - name: DB_PASSWORD
+              key: SPRING_DATASOURCE_USERNAME
+        - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: springboot-app-secret
-              key: DB_PASSWORD
-        - name: DB_NAME
+              key: SPRING_DATASOURCE_PASSWORD
+        - name: SPRING_DATA_MONGODB_URI
           valueFrom:
             secretKeyRef:
               name: springboot-app-secret
-              key: DB_NAME
+              key: SPRING_DATA_MONGODB_URI
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -95,13 +122,15 @@ type: Opaque
 data:
   # Database connection secrets (base64 encoded)
   # postgres
-  DB_USERNAME: cG9zdGdyZXM=
+  SPRING_DATASOURCE_USERNAME: cG9zdGdyZXM=
   # strongpassword123
-  DB_PASSWORD: c3Ryb25ncGFzc3dvcmQxMjM=
+  SPRING_DATASOURCE_PASSWORD: c3Ryb25ncGFzc3dvcmQxMjM=
   # realtimechat
-  DB_NAME: cmVhbHRpbWVjaGF0
+  # DB_NAME: cmVhbHRpbWVjaGF0
   # jwt-secret
   JWT_SECRET: 1de549fe4ebc93bf42b98b24fc5f617469e74d475a655d3df35fe2dce9268133e023c6471a99a72dc420e04389a4e6f8
+  # mongodb://admin:07QmRa1RYrP3oq4@mongodb-service.production.svc.cluster.local:27017/MongoDB?authSource=admin
+  SPRING_DATA_MONGODB_URI: bW9uZ29kYjovL2FkbWluOjA3UW1SYTFSWXJQM29xNEBtb25nb2RiLXNlcnZpY2UucHJvZHVjdGlvbi5zdmMuY2x1c3Rlci5sb2NhbDoyNzAxNy9Nb25nb0RCP2F1dGhTb3VyY2U9YWRtaW4=
 
 ---
 # ConfigMap for Spring Boot application configuration
@@ -112,10 +141,12 @@ metadata:
   namespace: production
 data:
   # Just environment-specific values
-  database.host: "jdbc:postgresql://postgres-service:5432/realtimechat"
-  database.port: "5432"
-  app.environment: "production"
-  logging.level: "INFO"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/realtimechat"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_JPA_SHOW_SQL: "false"
+  JWT_EXPIRATION: "86400"
+  JWT_REFRESH_EXPIRATION: "604800"
 
 ---
 # Service for Spring Boot application
