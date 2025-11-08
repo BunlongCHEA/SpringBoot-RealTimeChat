@@ -112,7 +112,7 @@ public class WebSocketEventListener {
                     logActiveUsers("User disconnected");
                     
                     // Broadcast offline status to users in same chat rooms
-                    eventPublisher.broadcastUserStatusUpdate(userId, username, true, userParticipations);
+                    eventPublisher.broadcastUserStatusUpdate(userId, username, false, userParticipations);
                 }
             } catch (Exception e) {
                 log.error("[{}] | Error updating user offline status: {}", Instant.now(), e.getMessage());

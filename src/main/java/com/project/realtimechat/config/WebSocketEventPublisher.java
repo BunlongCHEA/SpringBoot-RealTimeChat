@@ -53,31 +53,42 @@ public class WebSocketEventPublisher {
          notification.put("chatRoom", chatRoom);
          notification.put("timestamp", utcString);
          
-         if (chatRoom.getParticipants() != null && !chatRoom.getParticipants().isEmpty()) {
-             for (ParticipantDTO participant : chatRoom.getParticipants()) {
-                 try {
-                     User user = userRepository.findById(participant.getUserId()).orElse(null);
-                     if (user != null) {
-                         messagingTemplate.convertAndSendToUser(
-                             user.getUsername(),
-                             "/queue/chat-updates",
-                             notification
-                         );
-                     } else {
-                         log.warn("User not found for participant ID: {}", participant.getUserId());
-                     }
-                 } catch (Exception e) {
-                     log.error("Failed to send chat room notification to participant {}: {}", 
-                             participant.getUserId(), e.getMessage());
-                 }
-             }
-             
-             log.debug("Completed broadcasting new chat room {} to {} participants", 
-                     chatRoom.getId(), chatRoom.getParticipants().size());
-             
-         } else {
-             log.warn("No participants found for chat room {}", chatRoom.getId());
-         }
+         // Broadcast to ALL ONLINE USERS (not just participants)
+         try {
+   	      // Option 1: Broadcast to all users (if you want global visibility)
+   	      messagingTemplate.convertAndSend("/topic/chat-updates", notification);
+   	      
+   	      log.info("Broadcasted to /topic/chat-updates for all users");
+   	      
+   	     } catch (Exception e) {
+   	      log.error("Failed to broadcast to all users: {}", e.getMessage());
+   	     }
+         
+//         if (chatRoom.getParticipants() != null && !chatRoom.getParticipants().isEmpty()) {
+//             for (ParticipantDTO participant : chatRoom.getParticipants()) {
+//                 try {
+//                     User user = userRepository.findById(participant.getUserId()).orElse(null);
+//                     if (user != null) {
+//                         messagingTemplate.convertAndSendToUser(
+//                             user.getUsername(),
+//                             "/queue/chat-updates",
+//                             notification
+//                         );
+//                     } else {
+//                         log.warn("User not found for participant ID: {}", participant.getUserId());
+//                     }
+//                 } catch (Exception e) {
+//                     log.error("Failed to send chat room notification to participant {}: {}", 
+//                             participant.getUserId(), e.getMessage());
+//                 }
+//             }
+//             
+//             log.debug("Completed broadcasting new chat room {} to {} participants", 
+//                     chatRoom.getId(), chatRoom.getParticipants().size());
+//             
+//         } else {
+//             log.warn("No participants found for chat room {}", chatRoom.getId());
+//         }
      } catch (Exception e) {
          log.error("Failed to broadcast new chat room: {}", e.getMessage());
      }
@@ -128,12 +139,16 @@ public class WebSocketEventPublisher {
   */
  public void broadcastUserStatusUpdate(Long userId, String username, boolean online, List<ParticipantDTO> userParticipations) {
      try {
+    	 String utcString = Instant.now().toString();
+    	 
          Map<String, Object> statusUpdate = new HashMap<>();
          statusUpdate.put("userId", userId);
          statusUpdate.put("username", username);
          statusUpdate.put("online", online);
-         statusUpdate.put("lastSeen", Instant.now().toString());
+         statusUpdate.put("lastSeen", utcString);
+         statusUpdate.put("type", "USER_STATUS_UPDATE");
          
+         // Broadcast to each room the user participates in
          for (ParticipantDTO participation : userParticipations) {
              String destination = "/topic/chat/" + participation.getChatRoomId() + "/status";
              messagingTemplate.convertAndSend(destination, statusUpdate);
@@ -141,6 +156,11 @@ public class WebSocketEventPublisher {
              log.debug("Broadcasted status update for user {} to chat room {}", 
                      username, participation.getChatRoomId());
          }
+         
+         // IMPORTANT: Also broadcast to a global user status topic
+         // This allows other users to receive updates even if they're in different rooms
+         messagingTemplate.convertAndSend("/topic/user/" + userId + "/status", statusUpdate);
+         
      } catch (Exception e) {
          log.error("Failed to broadcast status update for user {}: {}", 
                  username, e.getMessage());
@@ -175,7 +195,7 @@ public class WebSocketEventPublisher {
  }
  
  /**
-  * NEW: Broadcast message sent notification to all participants for sidebar updates
+  * Broadcast message sent notification to all participants for sidebar updates
   */
  public void broadcastMessageSentNotification(Long chatRoomId, ChatMessageDTO message) {
      try {
@@ -187,22 +207,32 @@ public class WebSocketEventPublisher {
          notification.put("messageId", message.getId());
          notification.put("content", message.getContent());
          notification.put("timestamp", utcString);
+
+         try {
+   	      // Option 1: Broadcast to all users (if you want global visibility)
+   	      messagingTemplate.convertAndSend("/topic/message-notifications", notification);
+   	      
+   	      log.info("Broadcasted to /topic/message-notifications for all users");
+   	      
+   	     } catch (Exception e) {
+   	      log.error("Failed to broadcast to all users: {}", e.getMessage());
+   	     }
          
-         // Get all participants of the room
-         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElse(null);
-         if (chatRoom != null && chatRoom.getParticipants() != null) {
-             for (Participant participant : chatRoom.getParticipants()) {
-                 User user = participant.getUsers();
-                 if (user != null) {
-                     // Send to user's global message notification queue
-                     messagingTemplate.convertAndSendToUser(
-                         user.getUsername(),
-                         "/queue/message-notifications",
-                         notification
-                     );
-                 }
-             }
-         }
+        //  // Get all participants of the room
+        //  ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElse(null);
+        //  if (chatRoom != null && chatRoom.getParticipants() != null) {
+        //      for (Participant participant : chatRoom.getParticipants()) {
+        //          User user = participant.getUsers();
+        //          if (user != null) {
+        //              // Send to user's global message notification queue
+        //              messagingTemplate.convertAndSendToUser(
+        //                  user.getUsername(),
+        //                  "/queue/message-notifications",
+        //                  notification
+        //              );
+        //          }
+        //      }
+        //  }
          
      } catch (Exception e) {
          log.error("Failed to broadcast message sent notification: {}", e.getMessage());
