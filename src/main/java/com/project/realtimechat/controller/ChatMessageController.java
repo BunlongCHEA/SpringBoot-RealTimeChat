@@ -47,7 +47,8 @@ import com.project.realtimechat.repository.UserRepository;
 import com.project.realtimechat.service.ChatMessageService;
 import com.project.realtimechat.service.ParticipantService;
 
-import io.jsonwebtoken.io.IOException;
+// import io.jsonwebtoken.io.IOException;
+import java.io.IOException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -132,7 +133,7 @@ public class ChatMessageController {
                         "/topic/chat/" + chatRoomId, 
                         messageDTO);
                 
-                // NEW: Broadcast to all participants for sidebar updates
+                // Broadcast to all participants for sidebar updates
                 eventPublisher.broadcastMessageSentNotification(chatRoomId, messageDTO);
                 
                 log.info("[{}] | Message from {} sent to room {} successfully", 
@@ -167,6 +168,8 @@ public class ChatMessageController {
             @DestinationVariable Long chatRoomId,
             @Payload Map<String, Object> messagePayload,
             Authentication authentication) {
+                
+        log.info("[{}] CONTROLLER METHOD INVOKED: sendImageMessage", Instant.now());
     	
     	if (authentication == null) {
             log.error("[{}] | Unauthenticated user attempted to send image to room {}", Instant.now(), chatRoomId);
@@ -262,6 +265,12 @@ public class ChatMessageController {
                 
                 log.info("[{}] | Image message from {} sent to room {} successfully", 
                         Instant.now(), username, chatRoomId);
+
+                // Broadcast to global message notifications (for ChatSidebar)
+                eventPublisher.broadcastMessageSentNotification(chatRoomId, messageDTO);
+                
+                log.info("[{}] | Image message from {} sent to room {} successfully - MessageId: {}, Content: \"{}\"", 
+                        Instant.now(), username, chatRoomId, messageDTO.getId(), messageDTO.getContent());
             }
             
         } catch (Exception e) {
@@ -330,20 +339,23 @@ public class ChatMessageController {
                 
                 @Override
                 public void transferTo(File dest) throws IOException, IllegalStateException {
-                	 try (FileOutputStream fos = new FileOutputStream(dest)) {
-                         fos.write(decodedBytes);
-                     } catch (FileNotFoundException e) {
-                         throw new IOException("Could not create file: " + dest.getAbsolutePath(), e);
-                     } catch (IOException e) {
-                         throw new IOException("Error writing to file: " + dest.getAbsolutePath(), e);
-                     } catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+                    try (FileOutputStream fos = new FileOutputStream(dest)) {
+                        fos.write(decodedBytes);
+                    } catch (FileNotFoundException e) {
+                        log.error("File not found: {}", e.getMessage());
+                        throw new IOException("Could not create file: " + dest.getAbsolutePath(), e);
+                    } catch (IOException e) {
+                        log.error("Error writing to file: {}", e.getMessage());
+                        throw new IOException("Error writing to file: " + dest.getAbsolutePath(), e);
+                    }
                 }
             };
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid base64 data: {}", e.getMessage());
             throw new BadRequestException("Invalid base64 image data: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error converting base64 to multipart file: {}", e.getMessage());
+            throw new BadRequestException("Failed to process image: " + e.getMessage());
         }
     }
     

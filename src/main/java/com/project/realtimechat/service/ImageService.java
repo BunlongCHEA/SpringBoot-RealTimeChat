@@ -9,10 +9,11 @@ import com.project.realtimechat.entity.ImageDocument;
 
 public interface ImageService {
 	ImageDocument saveImage(MultipartFile file, String uploadedBy, Long chatRoomId, Long messageId);
-    Optional<ImageDocument> getImageById(Long id);
+    ImageDocument updateImage(ImageDocument imageDocument);
+    Optional<ImageDocument> getImageById(String id);
     List<ImageDocument> getImagesByChatRoom(Long chatRoomId);
     List<ImageDocument> getImagesByUser(String uploadedBy);
-    void deleteImage(Long id);
+    void deleteImage(String id);
     void deleteImageByMessageId(Long messageId);
-    String generateImageUrl(Long imageId);
+    String generateImageUrl(String imageId);
 }

@@ -62,9 +62,21 @@ public class ImageServiceImpl implements ImageService {
             throw new BadRequestException("Failed to save image: " + e.getMessage());
 		}
 	}
+
+    @Override
+    public ImageDocument updateImage(ImageDocument imageDocument) {
+        try {
+            ImageDocument updated = imageRepository.save(imageDocument);
+            log.info("Updated image document with ID: {}", updated.getId());
+            return updated;
+        } catch (Exception e) {
+            log.error("Failed to update image document: {}", e.getMessage());
+            throw new RuntimeException("Failed to update image: " + e.getMessage());
+        }
+    }
     
     @Override
-    public Optional<ImageDocument> getImageById(Long id) {
+    public Optional<ImageDocument> getImageById(String id) {
         return imageRepository.findById(id);
     }
     
@@ -79,7 +91,7 @@ public class ImageServiceImpl implements ImageService {
     }
 	
     @Override
-    public void deleteImage(Long id) {
+    public void deleteImage(String id) {
         if (!imageRepository.existsById(id)) {
             throw new ResourceNotFoundException("Image not found with ID: " + id);
         }
@@ -96,8 +108,14 @@ public class ImageServiceImpl implements ImageService {
 //	--- Helper function ---
 	
 	@Override
-    public String generateImageUrl(Long imageId) {
-        return baseUrl + "/api/images/" + imageId;
+    public String generateImageUrl(String imageId) {
+        // return baseUrl + "/api/images/" + imageId;
+        // Ensure baseUrl doesn't end with slash and path starts with slash
+        String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String imageUrl = cleanBaseUrl + "/api/v1/images/" + imageId;
+        
+        log.info("[{}] | Generated image URL: {}", Instant.now(), imageUrl);
+        return imageUrl;
     }
 	
 	/**

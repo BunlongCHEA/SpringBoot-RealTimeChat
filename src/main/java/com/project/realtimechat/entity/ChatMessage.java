@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
@@ -40,6 +41,9 @@ public class ChatMessage {
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
+
+    @Column(name = "image_id")
+    private String imageId; // MongoDB ObjectId stored as String
 
     @Size(max = 2048)
     private String content;

@@ -198,44 +198,50 @@ public class WebSocketEventPublisher {
   * Broadcast message sent notification to all participants for sidebar updates
   */
  public void broadcastMessageSentNotification(Long chatRoomId, ChatMessageDTO message) {
-     try {
-         String utcString = Instant.now().toString();
-         
-         Map<String, Object> notification = new HashMap<>();
-         notification.put("type", "MESSAGE_SENT");
-         notification.put("chatRoomId", chatRoomId);
-         notification.put("messageId", message.getId());
-         notification.put("content", message.getContent());
-         notification.put("timestamp", utcString);
+    try {
+        String utcString = Instant.now().toString();
+        
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("type", "MESSAGE_SENT");
+        notification.put("chatRoomId", chatRoomId);
+        notification.put("messageId", message.getId());
+        notification.put("content", message.getContent());
+        notification.put("timestamp", utcString);
 
-         try {
-   	      // Option 1: Broadcast to all users (if you want global visibility)
-   	      messagingTemplate.convertAndSend("/topic/message-notifications", notification);
-   	      
-   	      log.info("Broadcasted to /topic/message-notifications for all users");
-   	      
-   	     } catch (Exception e) {
-   	      log.error("Failed to broadcast to all users: {}", e.getMessage());
-   	     }
-         
-        //  // Get all participants of the room
-        //  ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElse(null);
-        //  if (chatRoom != null && chatRoom.getParticipants() != null) {
-        //      for (Participant participant : chatRoom.getParticipants()) {
-        //          User user = participant.getUsers();
-        //          if (user != null) {
-        //              // Send to user's global message notification queue
-        //              messagingTemplate.convertAndSendToUser(
-        //                  user.getUsername(),
-        //                  "/queue/message-notifications",
-        //                  notification
-        //              );
-        //          }
-        //      }
-        //  }
-         
-     } catch (Exception e) {
-         log.error("Failed to broadcast message sent notification: {}", e.getMessage());
-     }
+        try {
+            // Broadcast to all users (if you want global visibility)
+            // messagingTemplate.convertAndSend("/topic/message-notifications", notification);
+            messagingTemplate.convertAndSend("/topic/message-notifications", message);
+            
+            log.info("Broadcasted message to /topic/message-notifications - RoomId: {}, Type: {}, MessageId: {}, SenderId: {}, Content: {}", 
+                    chatRoomId, 
+                    message.getType(), 
+                    message.getId(), 
+                    message.getSenderId(),
+                    message.getContent() != null ? message.getContent().substring(0, Math.min(50, message.getContent().length())) : "no content");
+        
+        } catch (Exception e) {
+            log.error("Failed to broadcast to all users: {}", e.getMessage());
+        }
+        
+    //  // Get all participants of the room
+    //  ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElse(null);
+    //  if (chatRoom != null && chatRoom.getParticipants() != null) {
+    //      for (Participant participant : chatRoom.getParticipants()) {
+    //          User user = participant.getUsers();
+    //          if (user != null) {
+    //              // Send to user's global message notification queue
+    //              messagingTemplate.convertAndSendToUser(
+    //                  user.getUsername(),
+    //                  "/queue/message-notifications",
+    //                  notification
+    //              );
+    //          }
+    //      }
+    //  }
+        
+    } catch (Exception e) {
+        log.error("Failed to broadcast message sent notification: {}", e.getMessage());
+    }
  }
 }

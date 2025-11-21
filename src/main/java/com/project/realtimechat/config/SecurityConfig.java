@@ -42,6 +42,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
         		.requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/v1/**").permitAll()  // Allow public API endpoints
                 .requestMatchers("/ws/**").permitAll()  // Allow WebSocket handshake
                 .requestMatchers("/app/**").permitAll()  // Allow STOMP app destinations
                 .requestMatchers("/topic/**").permitAll()  // Allow STOMP topic destinations
@@ -72,6 +73,9 @@ public class SecurityConfig {
         
         // Set allowed headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Set exposed headers
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "Content-Disposition"));
         
         // Allow credentials
         configuration.setAllowCredentials(true);

@@ -17,8 +17,8 @@ import java.time.Instant;
 @Document(collection = "images")
 public class ImageDocument {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	// @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private String id;
     
     private String filename;
     private String contentType;

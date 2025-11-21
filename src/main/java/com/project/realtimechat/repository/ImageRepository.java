@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.project.realtimechat.entity.ImageDocument;
 
 @Repository
-public interface ImageRepository extends MongoRepository<ImageDocument, Long> {
+public interface ImageRepository extends MongoRepository<ImageDocument, String> {
 	List<ImageDocument> findByChatRoomId(Long chatRoomId);
 	List<ImageDocument> findByUploadedBy(String uploadedBy);
 	Optional<ImageDocument> findByMessageId(Long messageId);

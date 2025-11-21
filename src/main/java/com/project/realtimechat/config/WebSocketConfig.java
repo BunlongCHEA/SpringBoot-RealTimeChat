@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -44,13 +45,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         // Register STOMP Endpoints where clients will connect
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")  // Configure CORS
-                .withSockJS(); // Fallback options for browsers that don't support WebSocket
+                .withSockJS() // Fallback options for browsers that don't support WebSocket
+                .setStreamBytesLimit(10 * 1024 * 1024) // 10MB
+                .setHttpMessageCacheSize(10000)
+                .setDisconnectDelay(30 * 1000);
         
         // Add a plain WebSocket endpoint as well (without SockJS)
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*");
+        // registry.addEndpoint("/ws")
+        //         .setAllowedOriginPatterns("*");
         
         log.info("[{}] | User registered WebSocket STOMP endpoints", Instant.now());
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        registration
+            .setMessageSizeLimit(10 * 1024 * 1024) // 10MB
+            .setSendBufferSizeLimit(10 * 1024 * 1024) // 10MB
+            .setSendTimeLimit(20 * 1000); // 20 seconds
     }
     
     @Override

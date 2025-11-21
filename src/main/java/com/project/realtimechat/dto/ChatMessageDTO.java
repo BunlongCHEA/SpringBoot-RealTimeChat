@@ -22,4 +22,5 @@ public class ChatMessageDTO {
     private Instant timestamp;
     private Set<String> attachmentUrls;
     private Set<MessageStatusDTO> statuses;
+    private String imageId;
 }

@@ -1,12 +1,18 @@
 package com.project.realtimechat.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.project.realtimechat.entity.ChatRoom;
+
+import jakarta.persistence.LockModeType;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>{
 	@Query("SELECT DISTINCT cr FROM ChatRoom cr " +
@@ -22,4 +28,15 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>{
 	           "JOIN cr.participants p " +
 	           "WHERE p.users.id = :userId ")
 	List<ChatRoom> findChatRoomsByUserId(@Param("userId") Long userId);
+
+	// Custom update query to avoid full entity lock
+    @Modifying
+    @Transactional
+    @Query("UPDATE ChatRoom c SET c.chatMessages.id = :messageId WHERE c.id = :chatRoomId")
+    void updateLastMessageId(@Param("chatRoomId") Long chatRoomId, 
+                            @Param("messageId") Long messageId);
+
+	// @Lock(LockModeType.PESSIMISTIC_WRITE)
+    // @Query("SELECT c FROM ChatRoom c WHERE c.id = :id")
+    // Optional<ChatRoom> findByIdWithLock(@Param("id") Long id);
 }
