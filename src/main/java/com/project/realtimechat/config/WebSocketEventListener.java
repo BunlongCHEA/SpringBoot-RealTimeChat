@@ -59,8 +59,8 @@ public class WebSocketEventListener {
         
         if (auth != null) {
             String username = auth.getName();
-            log.info("[{}] | User {} connected to WebSocket", 
-            		Instant.now(), username);
+            log.info("User {} connected to WebSocket", 
+            		 username);
             
             // Update user online status
             try {
@@ -81,7 +81,7 @@ public class WebSocketEventListener {
                     eventPublisher.broadcastUserStatusUpdate(userId, username, true, userParticipations);
                 }
             } catch (Exception e) {
-                log.error("[{}] | Error updating user online status: {}", Instant.now(), e.getMessage());
+                log.error("Error updating user online status: {}",  e.getMessage());
             }
         }
     }
@@ -93,8 +93,8 @@ public class WebSocketEventListener {
         
         if (auth != null) {
             String username = auth.getName();
-            log.info("[{}] | User {} disconnected from WebSocket", 
-                    Instant.now(), username);
+            log.info("User {} disconnected from WebSocket", 
+                     username);
             
             // Update user offline status
             try {
@@ -115,7 +115,7 @@ public class WebSocketEventListener {
                     eventPublisher.broadcastUserStatusUpdate(userId, username, false, userParticipations);
                 }
             } catch (Exception e) {
-                log.error("[{}] | Error updating user offline status: {}", Instant.now(), e.getMessage());
+                log.error("Error updating user offline status: {}",  e.getMessage());
             }
         }
     }
@@ -132,8 +132,8 @@ public class WebSocketEventListener {
         
         if (auth != null && destination != null) {
             String username = auth.getName();
-            log.info("[{}] | User {} subscribed to {}", 
-                    Instant.now(), username, destination);
+            log.info("User {} subscribed to {}", 
+                     username, destination);
             
             // Validate subscription permission
             try {
@@ -145,8 +145,8 @@ public class WebSocketEventListener {
                         // Check if user is participant in this chat room
                         Long userId = getUserIdFromUsername(username);
                         if (userId != null && !participantService.isUserInChatRoom(userId, chatRoomId)) {
-                            log.warn("[{}] | User {} denied subscription to chat room {}", 
-                            		Instant.now(), username, chatRoomId);
+                            log.warn("User {} denied subscription to chat room {}", 
+                            		 username, chatRoomId);
                             
                             // Send error message to user
                             messagingTemplate.convertAndSendToUser(
@@ -155,30 +155,29 @@ public class WebSocketEventListener {
                                 "Access denied to chat room " + chatRoomId
                             );
                         } else {
-                            log.debug("[{}] | User {} granted access to chat room {} topic: {}", 
-                                    Instant.now(), username, chatRoomId, destination);
+                            log.debug("User {} granted access to chat room {} topic: {}", 
+                                     username, chatRoomId, destination);
                         }
                     }
                 } else if (destination.startsWith("/user/queue/")) {
                     // User-specific queues (/user/queue/chat-updates, /user/queue/errors, etc.)
-                    log.debug("[{}] | User {} subscribed to personal queue: {}", 
-                            Instant.now(), username, destination);
+                    log.debug("User {} subscribed to personal queue: {}", 
+                             username, destination);
                 }
                 
             } catch (Exception e) {
-                log.error("[{}] | Error validating subscription: {}", Instant.now(), e.getMessage());
+                log.error("Error validating subscription: {}", e.getMessage());
             }
         }
     }
     
     private void logActiveUsers(String event) {
         Set<SimpUser> users = userRegistry.getUsers();
-        log.info("[{}] | {} - Active users: {}", 
-                Instant.now(), event, users.size());
+        log.info("{} - Active users: {}", event, users.size());
                 
         for (SimpUser user : users) {
-            log.info("[{}] | Active user: {} with {} sessions", 
-                    Instant.now(), user.getName(), user.getSessions().size());
+            log.info("Active user: {} with {} sessions", 
+                    user.getName(), user.getSessions().size());
         }
     }
     
@@ -205,8 +204,8 @@ public class WebSocketEventListener {
             return Long.parseLong(chatRoomIdStr);
             
         } catch (NumberFormatException e) {
-            log.error("[{}] | Failed to extract chat room ID from destination: {}", 
-                    Instant.now(), destination);
+            log.error("Failed to extract chat room ID from destination: {}", 
+                     destination);
             return null;
         }
     }
@@ -216,12 +215,11 @@ public class WebSocketEventListener {
         
         if (userOpt.isPresent()) {
             Long userId = userOpt.get().getId();
-            log.debug("[{}] | Found user ID {} for username {}", 
-            		Instant.now(), userId, username);
+            log.debug("Found user ID {} for username {}", userId, username);
             return userId;
         } else {
-            log.warn("[{}] | No user found with username {}", 
-            		Instant.now(), username);
+            log.warn("No user found with username {}", 
+            		 username);
             return null;
         }
     }

@@ -42,7 +42,7 @@ public class MessageSizeInterceptor implements ChannelInterceptor {
             if (StompCommand.SEND.equals(command)) {
                 if (destination != null && destination.contains("/chat.sendImage")) {
                     log.info("=".repeat(80));
-                    log.info("[{}] 📦 IMAGE MESSAGE INTERCEPTED!", Instant.now());
+                    log.info("IMAGE MESSAGE INTERCEPTED!");
                     log.info("Command: {}", command);
                     log.info("Destination: {}", destination);
                     log.info("SessionId: {}", sessionId);
@@ -50,12 +50,10 @@ public class MessageSizeInterceptor implements ChannelInterceptor {
                     log.info("User: {}", accessor.getUser() != null ? accessor.getUser().getName() : "ANONYMOUS");
                     log.info("=".repeat(80));
                 } else {
-                    log.debug("[{}] 📨 Message - Command: {}, Destination: {}, Size: {:.2f}KB", 
-                            Instant.now(), command, destination, sizeInKB);
+                    log.debug("Message - Command: {}, Destination: {}, Size: {:.2f}KB", command, destination, sizeInKB);
                 }
             } else if (payloadSize > 10000) { // Log other large messages
-                log.info("[{}] 📦 Large message detected - Command: {}, Destination: {}, Size: {:.2f}KB ({} bytes)", 
-                        Instant.now(), command, destination, sizeInKB, payloadSize);
+                log.info("Large message detected - Command: {}, Destination: {}, Size: {:.2f}KB ({} bytes)", command, destination, sizeInKB, payloadSize);
             }
         }
         
@@ -69,8 +67,7 @@ public class MessageSizeInterceptor implements ChannelInterceptor {
             if (accessor != null) {
                 String destination = accessor.getDestination();
                 if (destination != null && destination.contains("/chat.sendImage")) {
-                    log.error("[{}] ❌ IMAGE MESSAGE FAILED TO SEND! Destination: {}", 
-                            Instant.now(), destination);
+                    log.error("IMAGE MESSAGE FAILED TO SEND! Destination: {}",  destination);
                 }
             }
         }
@@ -82,8 +79,8 @@ public class MessageSizeInterceptor implements ChannelInterceptor {
             StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
             if (accessor != null) {
                 String destination = accessor.getDestination();
-                log.error("[{}] ❌ Error after sending message to {}: {}", 
-                        Instant.now(), destination, ex.getMessage(), ex);
+                log.error("Error after sending message to {}: {}", 
+                        destination, ex.getMessage(), ex);
             }
         }
     }

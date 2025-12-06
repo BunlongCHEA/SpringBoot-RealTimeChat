@@ -87,13 +87,12 @@ public class ChatMessageController {
     		Authentication authentication
     		) {
     	if (authentication == null) {
-            log.error("[{}] | Unauthenticated user attempted to send message to room {}", Instant.now(), chatRoomId);
+            log.error("Unauthenticated user attempted to send message to room {}", chatRoomId);
             return;
         }
         
         String username = authentication.getName();
-        log.info("[{}] | User {} is sending message to room {}", 
-        		Instant.now(), username, chatRoomId);
+        log.info("User {} is sending message to room {}", username, chatRoomId);
         
         try {
             // Get user ID from authenticated username
@@ -102,7 +101,7 @@ public class ChatMessageController {
             
             // Check if user is a participant in this chat room
             if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
-                log.warn("[{}} | User {} is not a participant in chat room {}", Instant.now(), username, chatRoomId);
+                log.warn("User {} is not a participant in chat room {}", username, chatRoomId);
                 // Send error message to user
                 messagingTemplate.convertAndSendToUser(
                     username, 
@@ -114,7 +113,7 @@ public class ChatMessageController {
             
             String content = (String) messagePayload.get("content");
             if (content == null || content.trim().isEmpty()) {
-                log.warn("[{}] | Empty message content from user {}", Instant.now(), username);
+                log.warn("Empty message content from user {}", username);
                 return;
             }
             
@@ -136,13 +135,11 @@ public class ChatMessageController {
                 // Broadcast to all participants for sidebar updates
                 eventPublisher.broadcastMessageSentNotification(chatRoomId, messageDTO);
                 
-                log.info("[{}] | Message from {} sent to room {} successfully", 
-                		Instant.now(), username, chatRoomId);
+                log.info("Message from {} sent to room {} successfully", username, chatRoomId);
             }
             
         } catch (Exception e) {
-            log.error("[{}] | Error sending message from {} to room {}: {}", 
-            		Instant.now(), username, chatRoomId, e.getMessage());
+            log.error("Error sending message from {} to room {}: {}", username, chatRoomId, e.getMessage());
             
             // Send error message to user
             messagingTemplate.convertAndSendToUser(
@@ -169,10 +166,10 @@ public class ChatMessageController {
             @Payload Map<String, Object> messagePayload,
             Authentication authentication) {
                 
-        log.info("[{}] CONTROLLER METHOD INVOKED: sendImageMessage", Instant.now());
+        log.info("CONTROLLER METHOD INVOKED: sendImageMessage");
     	
     	if (authentication == null) {
-            log.error("[{}] | Unauthenticated user attempted to send image to room {}", Instant.now(), chatRoomId);
+            log.error("Unauthenticated user attempted to send image to room {}", chatRoomId);
             messagingTemplate.convertAndSendToUser(
                 "anonymous", 
                 "/queue/errors", 
@@ -182,8 +179,8 @@ public class ChatMessageController {
         }
     	
     	String username = authentication.getName();
-        log.info("[{}] | User {} is sending image to room {}", 
-                Instant.now(), username, chatRoomId);
+        log.info("User {} is sending image to room {}", 
+                username, chatRoomId);
         
         try {
         	// Get user ID from authenticated username
@@ -192,7 +189,7 @@ public class ChatMessageController {
             
             // Check if user is a participant in this chat room
             if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
-                log.warn("[{}] | User {} is not a participant in chat room {}", Instant.now(), username, chatRoomId);
+                log.warn("User {} is not a participant in chat room {}", username, chatRoomId);
                 messagingTemplate.convertAndSendToUser(
                     username, 
                     "/queue/errors", 
@@ -209,19 +206,19 @@ public class ChatMessageController {
             String contentType = (String) messagePayload.get("contentType");
             
             if (imageData != null && !imageData.trim().isEmpty()) {
-                log.info("[{}] | Processing base64 image upload for user {} in room {}", 
-                        Instant.now(), username, chatRoomId);
+                log.info("Processing base64 image upload for user {} in room {}", 
+                        username, chatRoomId);
                 
                 try {
                     // Convert base64 to MultipartFile
                     MultipartFile imageFile = convertBase64ToMultipartFile(imageData, filename, contentType);
                     response = chatMessageService.createImageMessage(chatRoomId, user.getId(), imageFile);
                     
-                    log.info("[{}] | Base64 image uploaded and message created for user {} in room {}", 
-                            Instant.now(), username, chatRoomId);
+                    log.info("Base64 image uploaded and message created for user {} in room {}", 
+                            username, chatRoomId);
                 } catch (Exception e) {
-                    log.error("[{}] | Error processing base64 image for user {} in room {}: {}", 
-                            Instant.now(), username, chatRoomId, e.getMessage());
+                    log.error("Error processing base64 image for user {} in room {}: {}", 
+                            username, chatRoomId, e.getMessage());
                     messagingTemplate.convertAndSendToUser(
                         username, 
                         "/queue/errors", 
@@ -234,7 +231,7 @@ public class ChatMessageController {
             else {
                 String imageUrl = (String) messagePayload.get("imageUrl");
                 if (imageUrl == null || imageUrl.trim().isEmpty()) {
-                    log.warn("[{}] | Neither image data nor image URL provided by user {}", Instant.now(), username);
+                    log.warn("Neither image data nor image URL provided by user {}", username);
                     messagingTemplate.convertAndSendToUser(
                         username, 
                         "/queue/errors", 
@@ -243,12 +240,12 @@ public class ChatMessageController {
                     return;
                 }
                 
-                log.info("[{}] | Processing image URL for user {} in room {}: {}", 
-                        Instant.now(), username, chatRoomId, imageUrl);
+                log.info("Processing image URL for user {} in room {}: {}", 
+                        username, chatRoomId, imageUrl);
                 
                 response = chatMessageService.createImageMessageFromUrl(chatRoomId, user.getId(), imageUrl);
-                log.info("[{}] | Image message from URL created for user {} in room {}", 
-                        Instant.now(), username, chatRoomId);
+                log.info("Image message from URL created for user {} in room {}", 
+                        username, chatRoomId);
             }
             
             // Broadcast message if successful
@@ -263,19 +260,19 @@ public class ChatMessageController {
                         "/topic/chat/" + chatRoomId, 
                         messageDTO);
                 
-                log.info("[{}] | Image message from {} sent to room {} successfully", 
-                        Instant.now(), username, chatRoomId);
+                log.info("Image message from {} sent to room {} successfully", 
+                        username, chatRoomId);
 
                 // Broadcast to global message notifications (for ChatSidebar)
                 eventPublisher.broadcastMessageSentNotification(chatRoomId, messageDTO);
                 
-                log.info("[{}] | Image message from {} sent to room {} successfully - MessageId: {}, Content: \"{}\"", 
-                        Instant.now(), username, chatRoomId, messageDTO.getId(), messageDTO.getContent());
+                log.info("Image message from {} sent to room {} successfully - MessageId: {}, Content: \"{}\"", 
+                        username, chatRoomId, messageDTO.getId(), messageDTO.getContent());
             }
             
         } catch (Exception e) {
-            log.error("[{}] | Error sending image message from {} to room {}: {}", 
-                    Instant.now(), username, chatRoomId, e.getMessage());
+            log.error("Error sending image message from {} to room {}: {}", 
+                    username, chatRoomId, e.getMessage());
             
             messagingTemplate.convertAndSendToUser(
                 username, 
@@ -401,8 +398,8 @@ public class ChatMessageController {
                     typingMessage);
             
         } catch (Exception e) {
-            log.error("[{}] | Error handling typing indicator from {} in room {}: {}", 
-            		Instant.now(), username, chatRoomId, e.getMessage());
+            log.error("Error handling typing indicator from {} in room {}: {}", 
+            		username, chatRoomId, e.getMessage());
         }
     }
     
@@ -421,8 +418,8 @@ public class ChatMessageController {
         }
         
         String username = authentication.getName();
-        log.info("[{}] | User {} is joining chat room {}", 
-        		Instant.now(), username, chatRoomId);
+        log.info("User {} is joining chat room {}", 
+        		username, chatRoomId);
         
         try {
             User user = userRepository.findByUsername(username)
@@ -430,7 +427,7 @@ public class ChatMessageController {
             
             // Check if user is a participant in this chat room
             if (!participantService.isUserInChatRoom(user.getId(), chatRoomId)) {
-                log.warn("[{}] | User {} is not authorized to join chat room {}", Instant.now(), username, chatRoomId);
+                log.warn("User {} is not authorized to join chat room {}", username, chatRoomId);
                 return;
             }
             
@@ -446,12 +443,12 @@ public class ChatMessageController {
                     "/topic/chat/" + chatRoomId + "/events", 
                     joinMessage);
             
-            log.info("[{}] | User {} joined chat room {} successfully", 
-            		Instant.now(), username, chatRoomId);
+            log.info("User {} joined chat room {} successfully", 
+            		username, chatRoomId);
             
         } catch (Exception e) {
-            log.error("[{}] | Error handling join for user {} in room {}: {}", 
-            		Instant.now(), username, chatRoomId, e.getMessage());
+            log.error("Error handling join for user {} in room {}: {}", 
+            		username, chatRoomId, e.getMessage());
         }
     }
     
@@ -470,8 +467,8 @@ public class ChatMessageController {
         }
         
         String username = authentication.getName();
-        log.info("[{}] | User {} is leaving chat room {}", 
-        		Instant.now(), username, chatRoomId);
+        log.info("User {} is leaving chat room {}", 
+        		username, chatRoomId);
         
         try {
             User user = userRepository.findByUsername(username)
@@ -489,12 +486,12 @@ public class ChatMessageController {
                     "/topic/chat/" + chatRoomId + "/events", 
                     leaveMessage);
             
-            log.info("[{}] | User {} left chat room {} successfully", 
-            		Instant.now(), username, chatRoomId);
+            log.info("User {} left chat room {} successfully", 
+            		username, chatRoomId);
             
         } catch (Exception e) {
-            log.error("[{}] | Error handling leave for user {} in room {}: {}", 
-            		Instant.now(), username, chatRoomId, e.getMessage());
+            log.error("Error handling leave for user {} in room {}: {}", 
+            		username, chatRoomId, e.getMessage());
         }
     }
     
@@ -523,7 +520,7 @@ public class ChatMessageController {
             
             return chatMessageService.getMessagesByChatRoomId(chatRoomId, pageable);
         } catch (Exception e) {
-            log.error("[{}] | Error retrieving messages: {}",Instant.now() ,e.getMessage());
+            log.error("Error retrieving messages: {}",e.getMessage());
             throw e;
         }
     }

@@ -36,7 +36,7 @@ public class ImageController {
 	@GetMapping("/{imageId}")
 	// public ResponseEntity<BaseDTO<byte[]>> getImage(@PathVariable String imageId) {
     public ResponseEntity<byte[]> getImage(@PathVariable String imageId) {
-        log.info("[{}] | Fetching image with ID: {}", Instant.now(), imageId);
+        log.info("Fetching image with ID: {}",  imageId);
 
 		Optional<ImageDocument> imageDocument = imageService.getImageById(imageId);
 		
@@ -49,8 +49,8 @@ public class ImageController {
             headers.setContentDispositionFormData("inline", image.getFilename());
             headers.setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic());
 
-            log.info("[{}] | Successfully retrieved image: {} ({})", 
-                    Instant.now(), imageId, image.getFilename());
+            log.info("Successfully retrieved image: {} ({})", 
+                     imageId, image.getFilename());
             
             BaseDTO<byte[]> response = new BaseDTO<>(
                     HttpStatus.OK.value(),
@@ -72,7 +72,7 @@ public class ImageController {
 			
 			// return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 
-            log.warn("[{}] | Image not found with ID: {}", Instant.now(), imageId);
+            log.warn("Image not found with ID: {}",  imageId);
             return ResponseEntity.notFound().build();
 		}		
 	}

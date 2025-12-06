@@ -56,7 +56,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Autowired
     private WebSocketEventPublisher webSocketEventPublisher;
     
-    private static final String utcString = Instant.now().toString();
+    // private static final String utcString = Instant.now().toString();
     
 	/**
 	 * Get chat room Id

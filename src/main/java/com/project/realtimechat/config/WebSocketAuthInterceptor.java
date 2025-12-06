@@ -94,24 +94,20 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                         accessor.setUser(auth);
                         
                         // Logs successful authentication
-                        log.info("[{}] | User {} authenticated successfully via WebSocket", 
-                        		Instant.now(), username);
+                        log.info("User {} authenticated successfully via WebSocket", 
+                        		username);
                     } else {
-                        log.warn("[{}] | Invalid JWT token provided for WebSocket authentication", 
-                                Instant.now());
+                        log.warn("Invalid JWT token provided for WebSocket authentication");
                     }
                 } catch (Exception e) {
                     // Logs authentication failures with the error message
-                    log.error("[{}] | WebSocket authentication failed: {}", 
-                    		Instant.now(), e.getMessage());
+                    log.error("WebSocket authentication failed: {}", e.getMessage());
                 }
             } else {
-                log.warn("[{}] | No valid authorization token found in WebSocket headers", 
-                        Instant.now());
+                log.warn("No valid authorization token found in WebSocket headers");
             }
         } else {
-            log.debug("[{}] | No Authorization header found in WebSocket message", 
-                    Instant.now());
+            log.debug("No Authorization header found in WebSocket message");
         }
     }
 }

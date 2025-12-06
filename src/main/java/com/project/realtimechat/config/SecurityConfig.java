@@ -43,6 +43,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
         		.requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/v1/**").permitAll()  // Allow public API endpoints
+                .requestMatchers("/api/fcm-tokens/**").permitAll()  // Allow API endpoints for FCM tokens
                 .requestMatchers("/ws/**").permitAll()  // Allow WebSocket handshake
                 .requestMatchers("/app/**").permitAll()  // Allow STOMP app destinations
                 .requestMatchers("/topic/**").permitAll()  // Allow STOMP topic destinations
@@ -66,7 +67,7 @@ public class SecurityConfig {
     	CorsConfiguration configuration = new CorsConfiguration();
     	
     	// Set allowed origins
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://127.0.0.1:3000", "https://chatnextjs.bunlong.site", "https://chatspringboot.bunlong.site"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://127.0.0.1:3000", "https://chatnextjs.bunlong.site", "https://chatspringboot.bunlong.site", "https://*.firebaseapp.com"));
         
         // Set allowed methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

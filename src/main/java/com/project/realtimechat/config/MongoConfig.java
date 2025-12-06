@@ -19,10 +19,10 @@ public class MongoConfig {
             try {
                 // Test connection and create database if not exists
                 mongoTemplate.getDb().listCollectionNames();
-                System.out.println("✅ MongoDB connection successful!");
-                System.out.println("📦 Database: " + mongoTemplate.getDb().getName());
+                System.out.println("MongoDB connection successful!");
+                System.out.println("Database: " + mongoTemplate.getDb().getName());
             } catch (Exception e) {
-                System.err.println("❌ MongoDB connection failed: " + e.getMessage());
+                System.err.println("MongoDB connection failed: " + e.getMessage());
             }
         };
     }

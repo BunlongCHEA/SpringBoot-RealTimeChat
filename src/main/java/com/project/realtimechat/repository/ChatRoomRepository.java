@@ -8,12 +8,14 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.realtimechat.entity.ChatRoom;
 
 import jakarta.persistence.LockModeType;
 
+@Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>{
 	@Query("SELECT DISTINCT cr FROM ChatRoom cr " +
 		       "JOIN cr.participants p1 " +

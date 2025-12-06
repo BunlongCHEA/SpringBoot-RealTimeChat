@@ -37,7 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         // Configure user destination prefix for private messages
         config.setUserDestinationPrefix("/user");
         
-        log.info("[{}] | User configuring WebSocket message broker", Instant.now());
+        log.info("User configuring WebSocket message broker");
     }
 
     @Override
@@ -54,7 +54,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         // registry.addEndpoint("/ws")
         //         .setAllowedOriginPatterns("*");
         
-        log.info("[{}] | User registered WebSocket STOMP endpoints", Instant.now());
+        log.info("User registered WebSocket STOMP endpoints");
     }
 
     @Override
@@ -77,7 +77,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         registration.taskExecutor().keepAliveSeconds(60);
 //        registration.taskExecutor().allowCoreThreadTimeOut(true);
         
-        log.info("[{}] | Configured WebSocket client inbound channel with auth interceptor", Instant.now());
+        log.info("Configured WebSocket client inbound channel with auth interceptor");
     }
     
     @Override
@@ -87,7 +87,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
         
         registration.taskExecutor().keepAliveSeconds(60);
         
-        log.info("[{}] | Configured WebSocket client outbound channel", Instant.now());
+        log.info("Configured WebSocket client outbound channel");
     }
 	
 }

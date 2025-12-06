@@ -100,7 +100,7 @@ public class WebSocketEventPublisher {
  public void broadcastParticipantAdded(Long chatRoomId, ParticipantDTO newParticipant, String addedByUsername) {
      try {
          String utcString = Instant.now().toString();
-         log.info("[{}] | Broadcasting participant addition to chat room {}", utcString, chatRoomId);
+         log.info("Broadcasting participant addition to chat room {}", chatRoomId);
          
          Map<String, Object> notification = new HashMap<>();
          notification.put("type", "PARTICIPANT_ADDED");
@@ -186,8 +186,8 @@ public class WebSocketEventPublisher {
              statusUpdate
          );
          
-         log.debug("[{}] | Broadcasted message status {} for message {} by user {}", 
-                 utcString, status, messageId, userId);
+         log.debug("Broadcasted message status {} for message {} by user {}", 
+                status, messageId, userId);
                  
      } catch (Exception e) {
          log.error("Failed to broadcast message status: {}", e.getMessage());

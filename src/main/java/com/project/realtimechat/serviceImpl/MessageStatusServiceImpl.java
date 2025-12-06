@@ -126,8 +126,8 @@ public class MessageStatusServiceImpl implements MessageStatusService {
             User user = findEntityByUserId(userId);
             ChatMessage chatMessage = findEntityByMessageId(messageId);
             
-            log.debug("[{}] | Checking User ID {} with Chat Message ID {}", 
-            		Instant.now(), userId, messageId);
+            log.debug("Checking User ID {} with Chat Message ID {}", 
+            		userId, messageId);
             
             
             // Find the existing message status

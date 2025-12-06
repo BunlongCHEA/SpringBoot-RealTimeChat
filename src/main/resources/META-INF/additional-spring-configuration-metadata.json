@@ -10,8 +10,13 @@
     "description": "A description for 'jwt.expiration'"
   },
   {
-      "name": "jwt.refresh-expiration",
-      "type": "java.lang.String",
-      "description": "A description for 'jwt.refresh-expiration'"
-   }
+    "name": "jwt.refresh-expiration",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.refresh-expiration'"
+  },
+  {
+    "name": "firebase.credentials.encoded",
+    "type": "java.lang.String",
+    "description": "A description for 'firebase.credentials.encoded'"
+  }
 ]}

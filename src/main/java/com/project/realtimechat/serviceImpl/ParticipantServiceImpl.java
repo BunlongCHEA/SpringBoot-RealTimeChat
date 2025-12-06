@@ -626,8 +626,8 @@ public class ParticipantServiceImpl implements ParticipantService {
         try {
             Optional<Participant> participant = participantRepository.findByUsersIdAndChatRoomsId(userId, chatRoomId);
             
-            log.debug("[{}] | Checking admin status for user {} in chat room {}", 
-            		Instant.now(), userId, chatRoomId);
+            log.debug("Checking admin status for user {} in chat room {}", 
+            		userId, chatRoomId);
             
             return participant.isPresent() && 
                    participant.get().getRole() == EnumRoomRole.ADMIN;

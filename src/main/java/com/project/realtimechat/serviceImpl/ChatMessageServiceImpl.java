@@ -47,6 +47,7 @@ import com.project.realtimechat.service.ChatMessageService;
 import com.project.realtimechat.service.ChatRoomService;
 import com.project.realtimechat.service.DateSeparatorService;
 import com.project.realtimechat.service.ImageService;
+import com.project.realtimechat.service.PushNotificationService;
 import com.project.realtimechat.service.UserService;
 
 /**
@@ -68,6 +69,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     
     @Autowired
     private MessageStatusRepository messageStatusRepository;
+    
+    @Autowired
+    private PushNotificationService pushNotificationService;
     
     @Autowired
     private UserService userService;
@@ -229,8 +233,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             message.setAttachmentUrls(attachmentUrls);
             
             ChatMessage savedMessage = chatMessageRepository.save(message);
-
-            log.info("✅ Created message - ID: {}, Type: {}, HasAttachments: {}, ImageURLs: {}, OtherURLs: {}", 
+            log.info("Created message - ID: {}, Type: {}, HasAttachments: {}, ImageURLs: {}, OtherURLs: {}", 
                 savedMessage.getId(), 
                 messageType, 
                 !attachmentUrls.isEmpty(),
@@ -244,6 +247,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             // Use custom update query instead of full entity save
             chatRoomRepository.updateLastMessageId(chatRoomId, savedMessage.getId());
             log.info("Updated last message for chat room {}", chatRoomId);
+
+            // Send push notifications to users who haven't read the message
+            sendPushNotificationsToUnreadUsers(savedMessage);
             
             ChatMessageDTO messageDTO = modelMapper.map(savedMessage, ChatMessageDTO.class);
             
@@ -330,7 +336,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             // Update ImageDocument with the messageId
             savedImage.setMessageId(savedMessage.getId());
             imageService.updateImage(savedImage); // Method to update existing image document
-            log.info("🔗 Linked image {} to message {}", savedImage.getId(), savedMessage.getId());
+            log.info("Linked image {} to message {}", savedImage.getId(), savedMessage.getId());
 
             // // Update the chat room's last message
             // chatRoom.setChatMessages(savedMessage);
@@ -338,7 +344,10 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
             // Use custom update query instead of full entity save
             chatRoomRepository.updateLastMessageId(chatRoomId, savedMessage.getId());
-            log.info("✅ Updated last message for chat room {}", chatRoomId);
+            log.info("Updated last message for chat room {}", chatRoomId);
+
+            // Send push notifications to users who haven't read the message
+            sendPushNotificationsToUnreadUsers(savedMessage);
             
             ChatMessageDTO messageDTO = modelMapper.map(savedMessage, ChatMessageDTO.class);
             
@@ -405,6 +414,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             // Use custom update query instead of full entity save
             chatRoomRepository.updateLastMessageId(chatRoomId, savedMessage.getId());
             log.info("Updated last message for chat room {}", chatRoomId);
+
+            // Send push notifications to users who haven't read the message
+            sendPushNotificationsToUnreadUsers(savedMessage);
             
             ChatMessageDTO messageDTO = modelMapper.map(savedMessage, ChatMessageDTO.class);
             
@@ -418,7 +430,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             throw new BadRequestException("Failed to create image message: " + e.getMessage());
         }
     }
-    
+
+
+    // --- Helper Methods ---
     /**
      * Finds a chat message entity by ID
      * @param id The ID of the message
@@ -452,5 +466,86 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         return lowerUrl.matches(".*\\.(jpg|jpeg|png|gif|bmp|webp|svg)(\\?.*)?$") ||
             lowerUrl.contains("/images/") ||
             lowerUrl.contains("image") && lowerUrl.contains("cdn");
+    }
+
+    // Private method to send push notifications
+    private void sendPushNotificationsToUnreadUsers(ChatMessage message) {
+        try {
+            Long senderId = message.getSender().getId();
+            Long chatRoomId = message.getChatRooms().getId();
+            
+            // Get all participants in the chat room except the sender
+            List<Long> recipientUserIds = participantRepository
+                    .findByChatRoomsId(chatRoomId)
+                    .stream()
+                    .map(participant -> participant. getUsers().getId())
+                    .filter(userId -> ! userId.equals(senderId)) // Exclude sender
+                    . collect(Collectors.toList());
+            
+            if (recipientUserIds.isEmpty()) {
+                log.debug("No recipients for push notification in room {}", chatRoomId);
+                return;
+            }
+
+            // ✅ NEW: Filter out users who are currently ONLINE and in the SAME chat room
+            List<Long> usersToNotify = recipientUserIds.stream()
+                .filter(userId -> {
+                    try {
+                        // Check if user is online
+                        Participant participant = participantRepository
+                                .findByUsersIdAndChatRoomsId(userId, chatRoomId)
+                                .orElse(null);
+                        
+                        if (participant == null) {
+                            return true; // Notify if participant not found
+                        }
+                        
+                        // ✅ Don't send notification if user is online (they'll see it in real-time via WebSocket)
+                        if (participant.getOnline() == true) {
+                            log.debug("Skipping notification for user {} - currently online in room {}", userId, chatRoomId);
+                            return false;
+                        }
+                        
+                        return true; // User is offline, send notification
+                        
+                    } catch (Exception e) {
+                        log.error("Error checking user status: {}", e.getMessage());
+                        return true; // On error, send notification to be safe
+                    }
+                })
+                .collect(Collectors. toList());
+            
+            // Filter out users who have already read the message
+            // (For new messages, no one has read it yet, so send to all)
+            List<Long> usersWithoutReadStatus = filterUsersWithoutReadStatus(
+                    message.getId(), 
+                    recipientUserIds
+            );
+            
+            if (! usersWithoutReadStatus.isEmpty()) {
+                pushNotificationService.sendNewMessageNotification(message, usersWithoutReadStatus);
+                log.info("📤 Sent push notifications for message {} to {} users", 
+                        message.getId(), usersWithoutReadStatus.size());
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to send push notifications: {}", e.getMessage(), e);
+            // Don't throw - notification failure shouldn't fail message creation
+        }
+    }
+
+    // Filter users who haven't read the message
+    private List<Long> filterUsersWithoutReadStatus(Long messageId, List<Long> userIds) {
+        // Get users who have READ status for this message
+        List<Long> usersWithReadStatus = messageStatusRepository
+                .findByMessageIdAndStatus(messageId, EnumStatus.READ)
+                .stream()
+                .map(status -> status.getUsersReceived().getId())
+                .collect(Collectors. toList());
+        
+        // Return users who don't have READ status
+        return userIds.stream()
+                .filter(userId -> !usersWithReadStatus.contains(userId))
+                .collect(Collectors.toList());
     }
 }
