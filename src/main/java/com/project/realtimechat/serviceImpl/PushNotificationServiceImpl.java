@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -311,13 +311,13 @@ public class PushNotificationServiceImpl implements PushNotificationService {
                         FirebaseMessagingException exception = sendResponse.getException();
                         String token = tokens.get(i);
                         
-                        // ✅ Log detailed error information
-                        log.error("❌ Failed to send to token {}: ErrorCode={}, Message={}", 
+                        // Log detailed error information
+                        log.error("Failed to send to token {}: ErrorCode={}, Message={}", 
                                 token. substring(0, Math.min(20, token.length())) + "...",
                                 exception.getMessagingErrorCode(),
                                 exception.getMessage());
                         
-                        // ✅ Log full stack trace for debugging
+                        // Log full stack trace for debugging
                         log.error("Full error details:", exception);
                     }
                 }
@@ -334,13 +334,13 @@ public class PushNotificationServiceImpl implements PushNotificationService {
             log.error("Failed to send batch notification: {}", e.getMessage(), e);
 
             if (e. getMessagingErrorCode() != null) {
-                log.error("❌ Firebase error code: {}", e.getMessagingErrorCode());
+                log.error("Firebase error code: {}", e.getMessagingErrorCode());
             }
             if (e.getCause() != null) {
-                log.error("❌ Cause: {}", e.getCause().getMessage());
+                log.error("Cause: {}", e.getCause().getMessage());
             }
         } catch (Exception e) {
-            log.error("❌ Unexpected error in batch notification: {}", e.getMessage(), e);
+            log.error("Unexpected error in batch notification: {}", e.getMessage(), e);
         }
     }
 

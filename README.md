@@ -52,12 +52,12 @@ Example:
 
 ```bash
     const firebaseConfig = {
-        apiKey: "AIzaSyB1234567890abcdefghijklmnop",
+        apiKey: "AIza*********************mnop",
         authDomain: "realtimechat-12345.firebaseapp.com",
         projectId: "realtimechat-12345",
-        storageBucket: "realtimechat-12345. appspot.com",
-        messagingSenderId: "123456789012",
-        appId: "1:123456789012:web:abcdef1234567890" 
+        storageBucket: "realtimechat-12345.appspot.com",
+        messagingSenderId: "12*****12",
+        appId: "1:12*****12:web:abcd**********890" 
         measurementId: "G-*******" };
 ```
 
